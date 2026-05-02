@@ -1,0 +1,27 @@
+====================================================================================================
+STRATEGY: InsideBarSMA_2Lot_VolumeVerified
+====================================================================================================
+Generated: 2026-05-02T06:16:44.684934
+
+RULES
+----------------------------------------------------------------------------------------------------
+1. Inside bar pattern: current high < previous high AND current low > previous low
+2. SMA(96) touches the inside bar candle (within 2% threshold)
+3. Volume spike detected: current volume > 1.8x 20-period average
+4. Entry: When ALL three conditions are met simultaneously
+5. Position sizing: Split into 2 equal lots
+6. Lot 1: Exit at +250 pips (trailing) OR after 159 minutes (whichever comes first)
+7. Lot 2: Exit ONLY at 159 minutes (NO stop loss, no trailing)
+8. Track market movement up to 160 minutes after entry
+
+PARAMETERS
+----------------------------------------------------------------------------------------------------
+SMA Period: 96
+SMA Touch Threshold: 2%
+Volume Spike Multiplier: 1.8x
+Lot 1 Target: +250 pips
+Lot 2 Hold Time: 159 minutes
+Initial Capital: $100
+Risk Per Trade: $7
+Timeframe: 1-minute
+Asset: BTC/USD

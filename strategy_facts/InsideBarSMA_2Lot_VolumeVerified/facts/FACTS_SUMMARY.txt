@@ -1,0 +1,27 @@
+====================================================================================================
+FACTS SUMMARY - InsideBarSMA_2Lot_VolumeVerified
+====================================================================================================
+
+KEY METRICS
+----------------------------------------------------------------------------------------------------
+Total Trades: 0
+Winning Trades: 0
+Win Rate: N/A - Insufficient trades
+Profit Factor: N/A - Insufficient trades
+Total P&L: $0.00
+Avg P&L: $0.00
+Health Status: UNKNOWN - Need more trades
+
+PATTERNS DISCOVERED
+----------------------------------------------------------------------------------------------------
+1. Insufficient data for pattern analysis - need at least 5 trades
+
+RECOMMENDATIONS FOR IMPROVEMENT
+----------------------------------------------------------------------------------------------------
+1. Add support/resistance confirmation for better entry quality
+2. Monitor 159-minute movement predictions vs actual results
+3. Consider different lot exit strategies (wider TP for lot 1)
+4. Evaluate if all 3 confluence factors are necessary or too restrictive
+5. If few trades generated, loosen confluence requirements (especially inside bar sensitivity)
+
+====================================================================================================
