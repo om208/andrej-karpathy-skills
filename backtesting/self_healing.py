@@ -37,9 +37,12 @@ class SelfHealingSystem:
         losing_trades = len(df[df['win'] == False])
         win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
 
-        total_pnl = df['pnl'].sum()
-        avg_win = df[df['win'] == True]['pnl'].mean() if winning_trades > 0 else 0
-        avg_loss = abs(df[df['win'] == False]['pnl'].mean()) if losing_trades > 0 else 0
+        # Handle both 'pnl' and 'total_pnl' column names
+        pnl_col = 'total_pnl' if 'total_pnl' in df.columns else 'pnl'
+
+        total_pnl = df[pnl_col].sum()
+        avg_win = df[df['win'] == True][pnl_col].mean() if winning_trades > 0 else 0
+        avg_loss = abs(df[df['win'] == False][pnl_col].mean()) if losing_trades > 0 else 0
         profit_factor = avg_win / avg_loss if avg_loss > 0 else 0
 
         return {
@@ -51,11 +54,12 @@ class SelfHealingSystem:
             'avg_win': round(avg_win, 2),
             'avg_loss': round(avg_loss, 2),
             'profit_factor': round(profit_factor, 2),
-            'avg_trade_size': round(df['pnl'].abs().mean(), 2)
+            'avg_trade_size': round(df[pnl_col].abs().mean(), 2)
         }
 
     def _analyze_patterns(self):
         df = self.trades_df
+        pnl_col = 'total_pnl' if 'total_pnl' in df.columns else 'pnl'
         pattern_perf = {}
 
         for col in ['exit_reason', 'support']:
@@ -68,7 +72,7 @@ class SelfHealingSystem:
                     pattern_perf[f'{col}_{val}'] = {
                         'count': total,
                         'win_rate': round(wr, 2),
-                        'avg_pnl': round(subset['pnl'].mean(), 2)
+                        'avg_pnl': round(subset[pnl_col].mean(), 2)
                     }
 
         return pattern_perf
@@ -78,6 +82,7 @@ class SelfHealingSystem:
         if 'entry_time' not in df.columns:
             return {}
 
+        pnl_col = 'total_pnl' if 'total_pnl' in df.columns else 'pnl'
         df['entry_hour'] = pd.to_datetime(df['entry_time']).dt.hour
         hour_perf = {}
 
@@ -89,7 +94,7 @@ class SelfHealingSystem:
             hour_perf[f'hour_{int(hour)}'] = {
                 'count': total,
                 'win_rate': round(wr, 2),
-                'avg_pnl': round(subset['pnl'].mean(), 2)
+                'avg_pnl': round(subset[pnl_col].mean(), 2)
             }
 
         return hour_perf

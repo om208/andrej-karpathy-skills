@@ -34,23 +34,23 @@ class StrategyResearchAnalyzer:
         facts = {
             'count': len(wt),
             'percentage': f"{(len(wt) / len(self.trades_df) * 100):.2f}%",
-            'total_pnl': f"${wt['pnl'].sum():.2f}",
-            'avg_pnl': f"${wt['pnl'].mean():.2f}",
-            'median_pnl': f"${wt['pnl'].median():.2f}",
-            'max_pnl': f"${wt['pnl'].max():.2f}",
-            'min_pnl': f"${wt['pnl'].min():.2f}",
-            'std_dev_pnl': f"${wt['pnl'].std():.2f}",
+            'total_pnl': f"${wt['total_pnl'].sum():.2f}",
+            'avg_pnl': f"${wt['total_pnl'].mean():.2f}",
+            'median_pnl': f"${wt['total_pnl'].median():.2f}",
+            'max_pnl': f"${wt['total_pnl'].max():.2f}",
+            'min_pnl': f"${wt['total_pnl'].min():.2f}",
+            'std_dev_pnl': f"${wt['total_pnl'].std():.2f}",
 
             'avg_minutes_held': f"{wt['minutes_held'].mean():.0f} min",
             'median_minutes_held': f"{wt['minutes_held'].median():.0f} min",
 
-            'exit_reason_breakdown': wt['exit_reason'].value_counts().to_dict(),
+            'exit_reason_breakdown': wt['lot1_exit_reason'].value_counts().to_dict() if 'lot1_exit_reason' in wt.columns else wt['exit_reason'].value_counts().to_dict() if 'exit_reason' in wt.columns else {},
 
             'avg_inside_bar_range': f"${wt['inside_bar_range'].mean():.2f}",
             'avg_prev_bar_range': f"${wt['prev_bar_range'].mean():.2f}",
 
-            'avg_drastic_move': f"{wt['drastic_move_percent'].mean():.2f}%",
-            'max_drastic_move': f"{wt['drastic_move_percent'].max():.2f}%",
+            'avg_drastic_move': f"{wt['positive_move_after_159min'].mean():.2f}%" if 'positive_move_after_159min' in wt.columns and wt['positive_move_after_159min'].notna().any() else f"{wt.get('drastic_move_percent', pd.Series([0])).mean():.2f}%",
+            'max_drastic_move': f"{wt['positive_move_after_159min'].max():.2f}%" if 'positive_move_after_159min' in wt.columns and wt['positive_move_after_159min'].notna().any() else f"{wt.get('drastic_move_percent', pd.Series([0])).max():.2f}%",
 
             'sma_touch_stats': {
                 'avg_sma': f"${wt['sma_value'].mean():.2f}",
@@ -75,17 +75,17 @@ class StrategyResearchAnalyzer:
         facts = {
             'count': len(lt),
             'percentage': f"{(len(lt) / len(self.trades_df) * 100):.2f}%",
-            'total_loss': f"-${abs(lt['pnl'].sum()):.2f}",
-            'avg_loss': f"-${abs(lt['pnl'].mean()):.2f}",
-            'median_loss': f"-${abs(lt['pnl'].median()):.2f}",
-            'max_loss': f"-${abs(lt['pnl'].min()):.2f}",
-            'min_loss': f"-${abs(lt['pnl'].max()):.2f}",
-            'std_dev_loss': f"${lt['pnl'].std():.2f}",
+            'total_loss': f"-${abs(lt['total_pnl'].sum()):.2f}",
+            'avg_loss': f"-${abs(lt['total_pnl'].mean()):.2f}",
+            'median_loss': f"-${abs(lt['total_pnl'].median()):.2f}",
+            'max_loss': f"-${abs(lt['total_pnl'].min()):.2f}",
+            'min_loss': f"-${abs(lt['total_pnl'].max()):.2f}",
+            'std_dev_loss': f"${lt['total_pnl'].std():.2f}",
 
             'avg_minutes_held': f"{lt['minutes_held'].mean():.0f} min",
             'median_minutes_held': f"{lt['minutes_held'].median():.0f} min",
 
-            'exit_reason_breakdown': lt['exit_reason'].value_counts().to_dict(),
+            'exit_reason_breakdown': lt['lot1_exit_reason'].value_counts().to_dict() if 'lot1_exit_reason' in lt.columns else lt['exit_reason'].value_counts().to_dict() if 'exit_reason' in lt.columns else {},
 
             'avg_inside_bar_range': f"${lt['inside_bar_range'].mean():.2f}",
             'avg_prev_bar_range': f"${lt['prev_bar_range'].mean():.2f}",
@@ -120,17 +120,17 @@ class StrategyResearchAnalyzer:
             'small_bars_(<$50)': {
                 'count': len(small_inside_bars),
                 'win_rate': f"{(len(small_inside_bars[small_inside_bars['win'] == True]) / len(small_inside_bars) * 100):.2f}%" if len(small_inside_bars) > 0 else "N/A",
-                'avg_pnl': f"${small_inside_bars['pnl'].mean():.2f}" if len(small_inside_bars) > 0 else "N/A"
+                'avg_pnl': f"${small_inside_bars['total_pnl'].mean():.2f}" if len(small_inside_bars) > 0 else "N/A"
             },
             'medium_bars_($50-$100)': {
                 'count': len(medium_inside_bars),
                 'win_rate': f"{(len(medium_inside_bars[medium_inside_bars['win'] == True]) / len(medium_inside_bars) * 100):.2f}%" if len(medium_inside_bars) > 0 else "N/A",
-                'avg_pnl': f"${medium_inside_bars['pnl'].mean():.2f}" if len(medium_inside_bars) > 0 else "N/A"
+                'avg_pnl': f"${medium_inside_bars['total_pnl'].mean():.2f}" if len(medium_inside_bars) > 0 else "N/A"
             },
             'large_bars_(>$100)': {
                 'count': len(large_inside_bars),
                 'win_rate': f"{(len(large_inside_bars[large_inside_bars['win'] == True]) / len(large_inside_bars) * 100):.2f}%" if len(large_inside_bars) > 0 else "N/A",
-                'avg_pnl': f"${large_inside_bars['pnl'].mean():.2f}" if len(large_inside_bars) > 0 else "N/A"
+                'avg_pnl': f"${large_inside_bars['total_pnl'].mean():.2f}" if len(large_inside_bars) > 0 else "N/A"
             }
         }
 
@@ -144,17 +144,17 @@ class StrategyResearchAnalyzer:
             'very_small_ratio_(<0.5)': {
                 'count': len(ratio_lt_0_5),
                 'win_rate': f"{(len(ratio_lt_0_5[ratio_lt_0_5['win'] == True]) / len(ratio_lt_0_5) * 100):.2f}%" if len(ratio_lt_0_5) > 0 else "N/A",
-                'avg_pnl': f"${ratio_lt_0_5['pnl'].mean():.2f}" if len(ratio_lt_0_5) > 0 else "N/A"
+                'avg_pnl': f"${ratio_lt_0_5['total_pnl'].mean():.2f}" if len(ratio_lt_0_5) > 0 else "N/A"
             },
             'medium_ratio_(0.5-0.8)': {
                 'count': len(ratio_0_5_to_0_8),
                 'win_rate': f"{(len(ratio_0_5_to_0_8[ratio_0_5_to_0_8['win'] == True]) / len(ratio_0_5_to_0_8) * 100):.2f}%" if len(ratio_0_5_to_0_8) > 0 else "N/A",
-                'avg_pnl': f"${ratio_0_5_to_0_8['pnl'].mean():.2f}" if len(ratio_0_5_to_0_8) > 0 else "N/A"
+                'avg_pnl': f"${ratio_0_5_to_0_8['total_pnl'].mean():.2f}" if len(ratio_0_5_to_0_8) > 0 else "N/A"
             },
             'high_ratio_(>=0.8)': {
                 'count': len(ratio_gte_0_8),
                 'win_rate': f"{(len(ratio_gte_0_8[ratio_gte_0_8['win'] == True]) / len(ratio_gte_0_8) * 100):.2f}%" if len(ratio_gte_0_8) > 0 else "N/A",
-                'avg_pnl': f"${ratio_gte_0_8['pnl'].mean():.2f}" if len(ratio_gte_0_8) > 0 else "N/A"
+                'avg_pnl': f"${ratio_gte_0_8['total_pnl'].mean():.2f}" if len(ratio_gte_0_8) > 0 else "N/A"
             }
         }
 
@@ -171,7 +171,7 @@ class StrategyResearchAnalyzer:
         facts['quick_exits_(<60_min)'] = {
             'count': len(quick_exits),
             'win_rate': f"{(len(quick_exits[quick_exits['win'] == True]) / len(quick_exits) * 100):.2f}%" if len(quick_exits) > 0 else "N/A",
-            'avg_pnl': f"${quick_exits['pnl'].mean():.2f}" if len(quick_exits) > 0 else "N/A",
+            'avg_pnl': f"${quick_exits['total_pnl'].mean():.2f}" if len(quick_exits) > 0 else "N/A",
             'wins': len(quick_exits[quick_exits['win'] == True]),
             'losses': len(quick_exits[quick_exits['win'] == False])
         }
@@ -179,7 +179,7 @@ class StrategyResearchAnalyzer:
         facts['medium_holds_(60-159_min)'] = {
             'count': len(medium_holds),
             'win_rate': f"{(len(medium_holds[medium_holds['win'] == True]) / len(medium_holds) * 100):.2f}%" if len(medium_holds) > 0 else "N/A",
-            'avg_pnl': f"${medium_holds['pnl'].mean():.2f}" if len(medium_holds) > 0 else "N/A",
+            'avg_pnl': f"${medium_holds['total_pnl'].mean():.2f}" if len(medium_holds) > 0 else "N/A",
             'wins': len(medium_holds[medium_holds['win'] == True]),
             'losses': len(medium_holds[medium_holds['win'] == False])
         }
@@ -187,7 +187,7 @@ class StrategyResearchAnalyzer:
         facts['long_holds_(>=159_min)'] = {
             'count': len(long_holds),
             'win_rate': f"{(len(long_holds[long_holds['win'] == True]) / len(long_holds) * 100):.2f}%" if len(long_holds) > 0 else "N/A",
-            'avg_pnl': f"${long_holds['pnl'].mean():.2f}" if len(long_holds) > 0 else "N/A",
+            'avg_pnl': f"${long_holds['total_pnl'].mean():.2f}" if len(long_holds) > 0 else "N/A",
             'wins': len(long_holds[long_holds['win'] == True]),
             'losses': len(long_holds[long_holds['win'] == False])
         }
@@ -206,21 +206,21 @@ class StrategyResearchAnalyzer:
         facts['low_volatility_entries'] = {
             'count': len(low_vol),
             'win_rate': f"{(len(low_vol[low_vol['win'] == True]) / len(low_vol) * 100):.2f}%" if len(low_vol) > 0 else "N/A",
-            'avg_pnl': f"${low_vol['pnl'].mean():.2f}" if len(low_vol) > 0 else "N/A",
+            'avg_pnl': f"${low_vol['total_pnl'].mean():.2f}" if len(low_vol) > 0 else "N/A",
             'avg_bar_range': f"${low_vol['inside_bar_range'].mean():.2f}" if len(low_vol) > 0 else "N/A"
         }
 
         facts['medium_volatility_entries'] = {
             'count': len(mid_vol),
             'win_rate': f"{(len(mid_vol[mid_vol['win'] == True]) / len(mid_vol) * 100):.2f}%" if len(mid_vol) > 0 else "N/A",
-            'avg_pnl': f"${mid_vol['pnl'].mean():.2f}" if len(mid_vol) > 0 else "N/A",
+            'avg_pnl': f"${mid_vol['total_pnl'].mean():.2f}" if len(mid_vol) > 0 else "N/A",
             'avg_bar_range': f"${mid_vol['inside_bar_range'].mean():.2f}" if len(mid_vol) > 0 else "N/A"
         }
 
         facts['high_volatility_entries'] = {
             'count': len(high_vol),
             'win_rate': f"{(len(high_vol[high_vol['win'] == True]) / len(high_vol) * 100):.2f}%" if len(high_vol) > 0 else "N/A",
-            'avg_pnl': f"${high_vol['pnl'].mean():.2f}" if len(high_vol) > 0 else "N/A",
+            'avg_pnl': f"${high_vol['total_pnl'].mean():.2f}" if len(high_vol) > 0 else "N/A",
             'avg_bar_range': f"${high_vol['inside_bar_range'].mean():.2f}" if len(high_vol) > 0 else "N/A"
         }
 
@@ -232,9 +232,9 @@ class StrategyResearchAnalyzer:
 
         if len(self.winning_trades) > 0 and len(self.losing_trades) > 0:
             facts['win_vs_loss_comparison'] = {
-                'avg_pnl_winners': f"${self.winning_trades['pnl'].mean():.2f}",
-                'avg_pnl_losers': f"-${abs(self.losing_trades['pnl'].mean()):.2f}",
-                'pnl_difference': f"${self.winning_trades['pnl'].mean() + abs(self.losing_trades['pnl'].mean()):.2f}",
+                'avg_pnl_winners': f"${self.winning_trades['total_pnl'].mean():.2f}",
+                'avg_pnl_losers': f"-${abs(self.losing_trades['total_pnl'].mean()):.2f}",
+                'pnl_difference': f"${self.winning_trades['total_pnl'].mean() + abs(self.losing_trades['total_pnl'].mean()):.2f}",
 
                 'avg_hold_time_winners': f"{self.winning_trades['minutes_held'].mean():.0f} min",
                 'avg_hold_time_losers': f"{self.losing_trades['minutes_held'].mean():.0f} min",
@@ -262,7 +262,7 @@ class StrategyResearchAnalyzer:
             facts['trades_held_past_159_minutes'] = {
                 'count': len(past_159),
                 'win_rate': f"{(len(past_159[past_159['win'] == True]) / len(past_159) * 100):.2f}%",
-                'avg_pnl': f"${past_159['pnl'].mean():.2f}",
+                'avg_pnl': f"${past_159['total_pnl'].mean():.2f}",
                 'avg_drastic_move': f"{past_159['drastic_move_percent'].mean():.2f}%",
                 'max_drastic_move': f"{past_159['drastic_move_percent'].max():.2f}%",
                 'min_drastic_move': f"{past_159['drastic_move_percent'].min():.2f}%"
@@ -275,7 +275,7 @@ class StrategyResearchAnalyzer:
             facts['early_exits_before_159_minutes'] = {
                 'count': len(early_exits),
                 'win_rate': f"{(len(early_exits[early_exits['win'] == True]) / len(early_exits) * 100):.2f}%",
-                'avg_pnl': f"${early_exits['pnl'].mean():.2f}",
+                'avg_pnl': f"${early_exits['total_pnl'].mean():.2f}",
                 'avg_drastic_move': f"{early_exits['drastic_move_percent'].mean():.2f}%",
                 'exit_via_tp': len(early_exits[early_exits['exit_reason'] == 'take_profit']),
                 'exit_via_sl': len(early_exits[early_exits['exit_reason'] == 'stop_loss'])
