@@ -1,0 +1,16 @@
+
+================================================================================
+BACKTEST REPORT - INSIDE BAR SMA 2-LOT STRATEGY
+================================================================================
+
+WARNING: Insufficient Trades for Analysis
+Number of trades generated: 0
+Minimum required for analysis: 5
+
+This may indicate:
+1. Volume spike filter is too strict
+2. SMA touch condition is too restrictive
+3. Inside bar pattern is rare in this timeframe
+
+Recommendation: Adjust confluence factor requirements (volume spike multiplier)
+================================================================================
