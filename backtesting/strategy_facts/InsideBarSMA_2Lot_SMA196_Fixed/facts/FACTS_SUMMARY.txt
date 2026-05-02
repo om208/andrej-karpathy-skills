@@ -1,0 +1,32 @@
+====================================================================================================
+FACTS SUMMARY - InsideBarSMA_2Lot_SMA196_Fixed
+====================================================================================================
+
+KEY METRICS
+----------------------------------------------------------------------------------------------------
+Total Trades: 104
+Winning Trades: 53
+Win Rate: 50.96%
+Profit Factor: 0.84
+Total P&L: $-1058.57
+Avg P&L: $-10.18
+Health Status: RED
+
+PATTERNS DISCOVERED
+----------------------------------------------------------------------------------------------------
+1. Win rate is 50.96%
+2. Profit factor is 0.84
+3. Average positive market move after 159min: 0.7929%
+4. Average negative market move after 159min: -0.6676%
+5. Lot 1 exits via take profit: 102
+6. Lot 1 exits via time: 2
+
+RECOMMENDATIONS FOR IMPROVEMENT
+----------------------------------------------------------------------------------------------------
+1. SMA(196) provides more confluence than SMA(96) but generates fewer trades
+2. Consider adding support/resistance confirmation for better entry quality
+3. Monitor 159-minute movement vs predicted drastic moves
+4. Evaluate if 2-lot system is achieving desired risk/reward balance
+5. If more trades needed, consider reducing SMA period to 96 or lower
+
+====================================================================================================

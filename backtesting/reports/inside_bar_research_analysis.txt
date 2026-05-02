@@ -1,0 +1,188 @@
+
+================================================================================
+TRADING STRATEGY RESEARCH REPORT - DATA ANALYSIS
+================================================================================
+
+📈 WINNING TRADES DETAILED ANALYSIS
+--------------------------------------------------------------------------------
+count: 42
+percentage: 13.17%
+total_pnl: $44.10
+avg_pnl: $1.05
+median_pnl: $1.05
+max_pnl: $1.05
+min_pnl: $1.05
+std_dev_pnl: $0.00
+avg_minutes_held: 1 min
+median_minutes_held: 1 min
+
+exit_reason_breakdown:
+  stop_loss: 277
+  take_profit: 42
+avg_inside_bar_range: $43.94
+avg_prev_bar_range: $84.76
+avg_drastic_move: 0.07%
+max_drastic_move: 0.26%
+
+sma_touch_stats:
+  avg_sma: $69647.20
+  min_sma: $65582.59
+  max_sma: $74571.22
+
+price_range_stats:
+  avg_entry_price: $69645.40
+  price_std_dev: $2323.52
+
+
+📉 LOSING TRADES DETAILED ANALYSIS
+--------------------------------------------------------------------------------
+count: 277
+percentage: 86.83%
+total_loss: -$96.95
+avg_loss: -$0.35
+median_loss: -$0.35
+max_loss: -$0.35
+min_loss: -$0.35
+std_dev_loss: $0.00
+avg_minutes_held: 1 min
+median_minutes_held: 1 min
+
+exit_reason_breakdown:
+  stop_loss: 277
+  take_profit: 42
+avg_inside_bar_range: $47.99
+avg_prev_bar_range: $88.13
+avg_drastic_move: 0.05%
+max_drastic_move: 0.59%
+
+sma_touch_stats:
+  avg_sma: $69572.02
+  min_sma: $63601.58
+  max_sma: $74636.18
+
+price_range_stats:
+  avg_entry_price: $69569.80
+  price_std_dev: $2153.93
+
+
+🔍 PATTERN ANALYSIS (Inside Bar + Previous Bar)
+--------------------------------------------------------------------------------
+
+inside_bar_analysis:
+
+  small_bars_(<$50):
+    count: 205
+    win_rate: 15.61%
+    avg_pnl: $-0.13
+
+  medium_bars_($50-$100):
+    count: 94
+    win_rate: 6.38%
+    avg_pnl: $-0.26
+
+  large_bars_(>$100):
+    count: 20
+    win_rate: 20.00%
+    avg_pnl: $-0.07
+
+bar_ratio_analysis:
+
+  very_small_ratio_(<0.5):
+    count: 135
+    win_rate: 15.56%
+    avg_pnl: $-0.13
+
+  medium_ratio_(0.5-0.8):
+    count: 153
+    win_rate: 12.42%
+    avg_pnl: $-0.18
+
+  high_ratio_(>=0.8):
+    count: 31
+    win_rate: 6.45%
+    avg_pnl: $-0.26
+
+
+⏱️  TIMING & HOLDING ANALYSIS
+--------------------------------------------------------------------------------
+
+quick_exits_(<60_min):
+  count: 319
+  win_rate: 13.17%
+  avg_pnl: $-0.17
+  wins: 42
+  losses: 277
+
+medium_holds_(60-159_min):
+  count: 0
+  win_rate: N/A
+  avg_pnl: N/A
+  wins: 0
+  losses: 0
+
+long_holds_(>=159_min):
+  count: 0
+  win_rate: N/A
+  avg_pnl: N/A
+  wins: 0
+  losses: 0
+
+
+📊 VOLATILITY ANALYSIS AT ENTRY
+--------------------------------------------------------------------------------
+
+low_volatility_entries:
+  count: 105
+  win_rate: 16.19%
+  avg_pnl: $-0.12
+  avg_bar_range: $20.25
+
+medium_volatility_entries:
+  count: 106
+  win_rate: 14.15%
+  avg_pnl: $-0.15
+  avg_bar_range: $40.95
+
+high_volatility_entries:
+  count: 108
+  win_rate: 9.26%
+  avg_pnl: $-0.22
+  avg_bar_range: $80.30
+
+
+⚖️  WIN VS LOSS COMPARISON
+--------------------------------------------------------------------------------
+
+win_vs_loss_comparison:
+  avg_pnl_winners: $1.05
+  avg_pnl_losers: -$0.35
+  pnl_difference: $1.40
+  avg_hold_time_winners: 1 min
+  avg_hold_time_losers: 1 min
+  avg_inside_bar_winners: $43.94
+  avg_inside_bar_losers: $47.99
+  avg_drastic_move_winners: 0.07%
+  avg_drastic_move_losers: 0.05%
+
+  exit_reason_winners:
+    stop_loss: 277
+    take_profit: 42
+
+  exit_reason_losers:
+    stop_loss: 277
+    take_profit: 42
+
+
+🚀 DRASTIC MOVE ANALYSIS (159-Minute Prediction)
+--------------------------------------------------------------------------------
+
+early_exits_before_159_minutes:
+  count: 319
+  win_rate: 13.17%
+  avg_pnl: $-0.17
+  avg_drastic_move: 0.05%
+  exit_via_tp: 42
+  exit_via_sl: 277
+
+
+================================================================================

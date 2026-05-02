@@ -85,15 +85,21 @@ class ReportGenerator:
 
         df = self.trades_df
         if len(df) > 0:
+            # Detect column names (2-lot vs single-lot)
+            has_lot_exits = 'lot1_exit_price' in df.columns
+            exit_price_col = 'lot1_exit_price' if has_lot_exits else 'exit_price'
+            pnl_col = 'total_pnl' if 'total_pnl' in df.columns else 'pnl'
+            exit_reason_col = 'lot1_exit_reason' if 'lot1_exit_reason' in df.columns else 'exit_reason'
+
             lines.append(f"{'Entry Time':<20} {'Entry':<10} {'Exit':<10} {'P&L':<10} {'Reason':<15}")
             lines.append("-" * 80)
 
             for idx, trade in df.iterrows():
                 entry_time = str(trade['entry_time'])[:16] if 'entry_time' in trade else 'N/A'
                 entry = f"${trade['entry_price']:.2f}"
-                exit_p = f"${trade['exit_price']:.2f}"
-                pnl = f"${trade['pnl']:.2f}"
-                reason = trade.get('exit_reason', 'N/A')
+                exit_p = f"${trade[exit_price_col]:.2f}"
+                pnl = f"${trade[pnl_col]:.2f}"
+                reason = trade.get(exit_reason_col, 'N/A')
 
                 lines.append(f"{entry_time:<20} {entry:<10} {exit_p:<10} {pnl:<10} {reason:<15}")
 

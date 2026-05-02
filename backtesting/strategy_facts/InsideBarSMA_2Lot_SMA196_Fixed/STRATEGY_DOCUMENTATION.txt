@@ -1,0 +1,26 @@
+====================================================================================================
+STRATEGY: InsideBarSMA_2Lot_SMA196_Fixed
+====================================================================================================
+Generated: 2026-05-02T07:02:01.935746
+
+RULES
+----------------------------------------------------------------------------------------------------
+1. Inside bar pattern: current high < previous high AND current low > previous low
+2. SMA(196) touches the inside bar candle (within 2% threshold)
+3. Entry: When inside bar + SMA touch are met simultaneously
+4. Position sizing: Split into 2 equal lots
+5. Lot 1: Exit at +250 pips OR after 159 minutes (whichever comes first)
+6. Lot 2: Exit ONLY at 159 minutes (NO stop loss, no profit target)
+7. Track market movement up to 160 minutes after position closure
+
+PARAMETERS
+----------------------------------------------------------------------------------------------------
+SMA Period: 196
+SMA Touch Threshold: 2%
+Lot 1 Target: +250 pips
+Lot 2 Hold Time: 159 minutes
+Initial Capital: $100
+Risk Per Trade: $7
+Timeframe: 1-minute
+Asset: BTC/USD
+Volume Filter: Disabled
