@@ -1,0 +1,265 @@
+================================================================================
+TRADINGVIEW STRATEGY FLOW DIAGRAM
+Inside Bar + SMA(196) with Inverse Filtering - 85% Win Rate
+================================================================================
+
+EXECUTION FLOW - DETAILED STEP-BY-STEP
+================================================================================
+
+STEP 1: CANDLE CLOSE DETECTED
+├─ Every candle, after bar_index increases (new candle formed)
+├─ Retrieve: open, high, low, close for current candle
+├─ Retrieve: high, low for previous candle
+└─ Status: Ready for analysis
+
+STEP 2: INSIDE BAR DETECTION
+├─ Check: current_high < previous_high?
+├─ Check: current_low > previous_low?
+├─ Calculate: compression_ratio = inside_bar_range / prev_bar_range
+│  └─ inside_bar_range = current_high - current_low
+│  └─ prev_bar_range = previous_high - previous_low
+├─ Result: inside_bar_found = TRUE/FALSE
+└─ Log: "Inside Bar: YES/NO, Compression: 0.XXX"
+
+STEP 3: SMA(196) TOUCH DETECTION
+├─ Calculate: SMA(196) = simple moving average of 196 periods
+├─ Get: candle_high, candle_low, sma_value
+├─ Check: sma_value between (candle_low - threshold) and (candle_high + threshold)?
+├─ threshold = candle_high - candle_low × 0.02 (2% of range)
+├─ Result: sma_touches = TRUE/FALSE
+└─ Log: "SMA Touch: YES/NO, SMA Value: X.XX"
+
+STEP 4: SIGNAL GENERATION
+├─ If (inside_bar_found AND sma_touches):
+│  └─ Signal exists: TRUE
+│  └─ Log: "SIGNAL DETECTED!"
+├─ Else:
+│  └─ Signal exists: FALSE
+│  └─ Log: "No signal this candle"
+└─ If no signal → Go to STEP 1 (wait for next candle)
+
+STEP 5: RISK SCORE CALCULATION (Only if signal exists)
+├─ Initialize: risk_score = 0
+├─
+│ Check Characteristic 1: Compression Range
+│ ├─ if (compression >= 0.20 AND compression < 0.35): risk_score += 1
+│ │  └─ Reason: "Very tight compression (whipsaw risk)"
+│ └─ Log: "Characteristic 1: +1" or "Characteristic 1: +0"
+├─
+│ Check Characteristic 2: Medium Compression
+│ ├─ if (compression >= 0.50 AND compression <= 0.65): risk_score += 1
+│ │  └─ Reason: "Medium compression (ambiguous pattern)"
+│ └─ Log: "Characteristic 2: +1" or "Characteristic 2: +0"
+├─
+│ Check Characteristic 3: Post-Exit Direction (Estimate)
+│ ├─ Heuristic: if (close < open AND close near low): likely_down = TRUE
+│ │  └─ This is post-entry indicator (will see in execution)
+│ ├─ Log: "Characteristic 3: Direction down risk?"
+│ └─ Note: This is harder to predict pre-entry
+├─
+├─ Final Risk Score:
+│  ├─ score = 0 → SAFE (proceed to entry)
+│  ├─ score = 1 → MEDIUM (skip - borderline)
+│  ├─ score >= 2 → RISKY (skip - avoid)
+└─ Log: "Risk Score: [0/1/2+], Decision: [TAKE/SKIP]"
+
+STEP 6: ENTRY DECISION
+├─ If risk_score == 0:
+│  ├─ Entry decision: TAKE
+│  ├─ Position size: Calculate based on capital and risk
+│  ├─ Lot 1 size: 0.35 units (50% of position)
+│  ├─ Lot 2 size: 0.35 units (50% of position)
+│  ├─ Entry price: current close or next candle open?
+│  │  └─ Decision: Use next candle open (after confirmation)
+│  ├─ Record: entry_time, entry_price, lot1_active, lot2_active
+│  ├─ Record: entry_bar = bar_index
+│  └─ Log: "ENTRY TAKEN: Lot1=0.35, Lot2=0.35, Price=X.XX"
+├─ Else (risk_score >= 1):
+│  ├─ Entry decision: SKIP
+│  └─ Log: "SIGNAL REJECTED: Risk Score = [1/2+], Reason: [MEDIUM/RISKY]"
+└─ If entered → Go to STEP 7
+    If skipped → Go to STEP 1
+
+STEP 7: POSITION TRACKING - EVERY SUBSEQUENT CANDLE
+├─ Check: Do we have open position?
+│  ├─ yes → Continue with Lot tracking
+│  └─ no → Go to STEP 1 (wait for new signal)
+├─
+│ Lot 1 Tracking (if active):
+│ ├─ Current bars held = current_bar_index - entry_bar
+│ ├─ Current P&L = (current_close - entry_price) × 0.35
+│ ├─ Check Lot 1 Exit Condition A (Take Profit):
+│ │  ├─ if (high >= entry_price + 250 pips):
+│ │  │  ├─ Lot 1 exits at (entry_price + 250 pips)
+│ │  │  ├─ Lot 1 P&L = 250 pips × 0.35
+│ │  │  ├─ Lot 1 status: CLOSED
+│ │  │  ├─ Exit reason: "Take Profit +250 pips"
+│ │  │  └─ Log: "LOT 1 EXIT: TP Hit at X.XX, P&L: +$XX.XX"
+│ ├─
+│ ├─ Check Lot 1 Exit Condition B (Time):
+│ │  ├─ if (bars_held >= 159 bars): [assuming 1-min timeframe]
+│ │  │  ├─ Lot 1 exits at current close
+│ │  │  ├─ Lot 1 P&L = (close - entry_price) × 0.35
+│ │  │  ├─ Lot 1 status: CLOSED
+│ │  │  ├─ Exit reason: "Time Exit 159 minutes"
+│ │  │  └─ Log: "LOT 1 EXIT: Time reached, Close at X.XX, P&L: +$XX.XX"
+│ ├─
+│ ├─ If neither condition met:
+│ │  └─ Log: "Lot 1 OPEN: P&L = $XX.XX, Bars held: XXX"
+├─
+│ Lot 2 Tracking (if active):
+│ ├─ Current bars held = current_bar_index - entry_bar
+│ ├─ Current P&L = (current_close - entry_price) × 0.35
+│ ├─ Check Lot 2 Exit Condition (Time only):
+│ │  ├─ if (bars_held >= 159 bars):
+│ │  │  ├─ Lot 2 exits at current close
+│ │  │  ├─ Lot 2 P&L = (close - entry_price) × 0.35
+│ │  │  ├─ Lot 2 status: CLOSED
+│ │  │  ├─ Exit reason: "Time Exit 159 minutes"
+│ │  │  └─ Log: "LOT 2 EXIT: Time reached, Close at X.XX, P&L: +$XX.XX"
+│ │  ├─ Total Position P&L = Lot1_PnL + Lot2_PnL
+│ │  ├─ Position status: CLOSED
+│ │  └─ Log: "POSITION CLOSED: Total P&L = $XX.XX, Win Rate = YES/NO"
+│ ├─
+│ └─ If time not reached:
+│    └─ Log: "Lot 2 OPEN: P&L = $XX.XX, Bars held: XXX"
+└─
+├─ If both lots closed:
+│  └─ Go to STEP 1 (ready for new signal)
+├─ If only Lot 1 closed, Lot 2 still open:
+│  └─ Continue tracking Lot 2 in next candle
+
+STEP 8: RE-ENTRY LOGIC
+├─ Condition 1: Must have NO open positions
+│  ├─ Both lots must be closed
+│  ├─ Or time must have expired
+├─ Condition 2: New signal must appear
+│  ├─ Must be new Inside bar + SMA touch
+│  ├─ Not the same signal that just closed
+├─ Condition 3: Risk score must be 0
+│  ├─ Same filtering applies
+├─ Result: Can re-enter immediately if conditions met
+│  └─ Go to STEP 5 (risk score calc for new signal)
+
+STEP 9: DEBUG LOGGING (If enabled in settings)
+├─ Every candle close, display:
+│  ├─ Time: [YYYY-MM-DD HH:MM]
+│  ├─ Price action: [O:X.XX H:X.XX L:X.XX C:X.XX]
+│  ├─ Inside bar: [YES/NO] Compression: [0.XXX]
+│  ├─ SMA(196): [X.XX] Touch: [YES/NO]
+│  ├─ Signal: [DETECTED/NONE]
+│  ├─ Risk score: [0/1/2+] Decision: [TAKE/SKIP]
+│  ├─ Positions:
+│  │  ├─ Lot 1: [OPEN/CLOSED] P&L: [+$XX.XX/-$XX.XX]
+│  │  ├─ Lot 2: [OPEN/CLOSED] P&L: [+$XX.XX/-$XX.XX]
+│  │  └─ Total: [+$XX.XX/-$XX.XX]
+│  └─ Notes: [Entry taken / Exit hit / Waiting]
+└─ Display location: Below candles (on chart) as table or text
+
+================================================================================
+KEY DECISION POINTS & CRITICAL DETAILS
+================================================================================
+
+1. ENTRY TIMING
+   ├─ Detect signal: At candle close ✓
+   ├─ Execute entry: Next candle open ✓ (confirmation)
+   ├─ Reason: Avoid false breakouts, wait for candle close confirmation
+   └─ Edge case: If price gaps, enter at gap price
+
+2. EXIT TIMING
+   ├─ Lot 1: Check every candle (high >= TP? OR time reached?)
+   ├─ Lot 2: Check every candle (time reached = 159 bars?)
+   ├─ Exit execution: Same candle when condition met
+   └─ Edge case: If both conditions on same candle, exit both
+
+3. RE-ENTRY TIMING
+   ├─ After both lots close: Can re-enter immediately next candle
+   ├─ Must have new signal (not same signal)
+   ├─ Must have risk score = 0
+   └─ No cooldown period needed
+
+4. SIGNAL VALIDATION
+   ├─ Inside bar: current_high < prev_high AND current_low > prev_low
+   ├─ SMA touch: sma within 2% of candle high/low
+   ├─ Both required: YES
+   └─ Timing: Check at candle close
+
+5. RISK SCORE TIMING
+   ├─ Calculate: At candle close after signal detection
+   ├─ Characteristics 1-2: Use current candle compression
+   ├─ Characteristic 3: Use post-entry observation (harder pre-entry)
+   └─ Decision: Accept if score = 0 only
+
+6. POSITION SIZING
+   ├─ Lot 1: 0.35 units (50%)
+   ├─ Lot 2: 0.35 units (50%)
+   ├─ Total: 0.70 units per trade
+   ├─ Based on: Capital × risk per trade / entry price
+   ├─ Minimum: Use smallest lot size possible
+   └─ Flexibility: Allow adjustment via settings
+
+7. TIMEFRAME CONVERSION
+   ├─ Strategy: 159 minutes hold time
+   ├─ On 1-minute chart: 159 bars = 159 candles
+   ├─ On 5-minute chart: 159/5 = ~32 bars
+   ├─ On 15-minute chart: 159/15 = ~11 bars
+   ├─ Implementation: bars_held = current_bar_index - entry_bar
+   ├─ Calculation: time_held = bars_held × timeframe_in_minutes
+   └─ Comparison: if time_held >= 159 minutes → EXIT
+
+8. EDGE CASES TO HANDLE
+   ├─ Gap up/down at entry: Use gap price as entry
+   ├─ Price jumps over TP before next candle: Still exit (high covers it)
+   ├─ Signal and TP hit in same candle: Exit takes precedence
+   ├─ Time expires and price below entry: Exit at close with loss
+   ├─ Multiple signals in same bar: Take only first one
+   ├─ No close below entry for Lot 2: Still exit at close per time
+   └─ Reversal before exit: Hold position per rules (no trailing stop)
+
+9. PERFORMANCE TRACKING
+   ├─ Win: total_pnl > 0
+   ├─ Loss: total_pnl <= 0
+   ├─ Win rate: wins / total_trades × 100
+   ├─ Running win rate: Update after each closed position
+   ├─ Monthly projection: cumulative P&L × (21 trading days)
+   └─ Target: Maintain 85%+ win rate
+
+10. DEBUG OUTPUT FORMAT (If enabled)
+    ├─ Location: Below each candle
+    ├─ Update: Every candle close
+    ├─ Content:
+    │  ├─ Time | OHLC | Inside | Compression | SMA | Touch | Signal | Risk | Decision | Lot1 P&L | Lot2 P&L
+    ├─ Format: Table or text label
+    ├─ Colors: Green for wins, Red for losses, Yellow for waiting
+    └─ Refresh: Clear previous, show current candle debug only
+
+================================================================================
+CRITICAL IMPLEMENTATION NOTES
+================================================================================
+
+✓ Always check candle close before any calculation
+✓ Always wait for new candle before re-entering
+✓ Always track 159 bars (not minutes directly, convert via timeframe)
+✓ Always calculate compression ratio correctly
+✓ Always validate both conditions before entering (inside bar AND SMA)
+✓ Always keep risk score at 0 for entry
+✓ Always exit Lot 1 at +250 pips if hit before 159 bars
+✓ Always exit Lot 2 exactly at 159 bars (or TP if lot 1)
+✓ Always show debug logs when enabled (below candles)
+✓ Always allow parameter changes from settings
+✓ Always show indicator options on chart (enable/disable)
+✓ Always handle edge cases (gaps, reversals, multiple signals)
+✓ Always maintain 85%+ win rate target
+
+================================================================================
+This flow ensures:
+1. Clear entry conditions (inside bar + SMA touch)
+2. Deterministic risk scoring (objective criteria)
+3. Proper position management (2 lots with different exits)
+4. Complete debug visibility (every step logged)
+5. Parametric flexibility (all settings adjustable)
+6. Edge case handling (gaps, timing, multiple signals)
+7. Expected 85%+ win rate (filters bad trades)
+
+Now implement this in Pine Script exactly as described.
+================================================================================
