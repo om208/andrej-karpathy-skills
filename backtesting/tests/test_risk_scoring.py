@@ -74,14 +74,15 @@ class TestRiskScoring(unittest.TestCase):
         self.assertEqual(risk_score, 1)  # Only tight triggers
 
     def test_risk_score_1_downward_momentum(self):
-        """Test risk score +1 for downward momentum"""
-        # close < open AND close near low (within 30% of range)
+        """Test risk score +1 for downward momentum (< -0.5% move)"""
+        # post_exit_down_move < -0.5% triggers risk score
         risk_score = self.validator.calculate_risk_score(
-            compression_ratio=0.40,  # Good compression
+            compression_ratio=0.40,   # Good compression
             current_open=100.0,
-            current_close=99.3,      # close < open
+            current_close=100.5,      # Neutral
             current_high=102.0,
-            current_low=99.0         # close near low: range=3, 30%=0.9, close_pos=0.3 < 0.9
+            current_low=99.0,
+            post_exit_down_move=-0.75  # -0.75% downward move (< -0.5%)
         )
         self.assertEqual(risk_score, 1)
 
@@ -169,38 +170,51 @@ class TestRiskScoring(unittest.TestCase):
         )
         self.assertEqual(risk_score, 1)
 
-    def test_risk_score_downward_boundary_high_close(self):
-        """Test downward momentum: close exactly at 30% of range"""
-        # range=10, 30%=3, close_pos exactly 3
+    def test_risk_score_downward_boundary_above(self):
+        """Test downward momentum boundary at -0.5% (above boundary)"""
+        # Just above boundary (no trigger)
         risk_score = self.validator.calculate_risk_score(
             compression_ratio=0.40,
             current_open=100.0,
-            current_close=99.3,      # At boundary
-            current_high=105.0,
-            current_low=95.0         # range=10, close_pos=4.3 > 3 (just over)
+            current_close=100.0,
+            current_high=102.0,
+            current_low=98.0,
+            post_exit_down_move=-0.49   # Above boundary (-0.49% > -0.5%)
         )
         self.assertEqual(risk_score, 0)
 
+    def test_risk_score_downward_boundary_below(self):
+        """Test downward momentum boundary at -0.5% (just below boundary)"""
+        # Below boundary (trigger)
+        risk_score = self.validator.calculate_risk_score(
+            compression_ratio=0.40,
+            current_open=100.0,
+            current_close=100.0,
+            current_high=102.0,
+            current_low=98.0,
+            post_exit_down_move=-0.51   # Just below boundary (-0.51% < -0.5%)
+        )
+        self.assertEqual(risk_score, 1)
+
     def test_risk_score_multiple_characteristics(self):
         """Test combining multiple risk characteristics"""
-        # This is contrived but tests the logic
+        # Tight compression + downward move
         validator = StrategyValidator(
             StrategyConfig(
                 filter_verytight_compression=True,
                 filter_medium_compression=True
             )
         )
-        # Note: Can't really have both tight AND medium compression
-        # But can have tight + downward
         risk_score = validator.calculate_risk_score(
             compression_ratio=0.25,
             current_open=100.5,
-            current_close=99.3,
+            current_close=100.0,
             current_high=101.0,
-            current_low=99.0
+            current_low=99.0,
+            post_exit_down_move=-0.75  # Tight + downward = 2 points
         )
-        # Should have: tight compression +1, downward momentum +1
-        self.assertGreaterEqual(risk_score, 1)
+        # Should have: tight compression +1, downward momentum +1 = 2 total
+        self.assertEqual(risk_score, 2)
 
 
 if __name__ == '__main__':

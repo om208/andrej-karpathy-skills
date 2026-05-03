@@ -1,0 +1,18 @@
+STRATEGY VALIDATION RESULTS
+================================================================================
+
+Validation Date: 2026-05-03 14:38:01.410184
+Data Period: 2026-02-26 07:01:00+05:30 to 2026-03-25 12:37:00+05:30
+
+NO FILTER RESULTS:
+  Trades: 104
+  Win Rate: 50.96%
+  Total P&L: $-1058.57
+  Avg P&L: $-10.18
+
+WITH FILTERING (Risk Score = 0):
+  Trades: 27
+  Win Rate: 85.19%
+  Total P&L: $4108.12
+  Avg P&L: $152.15
+  Filter Ratio: 74.0%

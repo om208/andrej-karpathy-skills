@@ -150,37 +150,36 @@ class StrategyValidator:
 
     def calculate_risk_score(self, compression_ratio: float, current_open: float,
                             current_close: float, current_high: float,
-                            current_low: float) -> int:
+                            current_low: float, post_exit_down_move: float = 0.0) -> int:
         """
         Calculate risk score based on pattern characteristics.
 
         Characteristics:
         1. Very tight compression (0.20-0.35) → +1 point
         2. Medium compression (0.50-0.65) → +1 point
-        3. Downward post-entry movement → +1 point
+        3. Post-exit downward movement (< -0.5%) → +1 point
 
         Score 0 = SAFE (85% win rate)
         Score >= 1 = RISKY (skip)
+
+        Note: post_exit_down_move should be a percentage (-1.5 = -1.5% move)
         """
         risk_score = 0
 
-        # Characteristic 1: Very tight compression
+        # Characteristic 1: Very tight compression (0.20-0.35)
         if self.config.filter_verytight_compression:
             if 0.20 <= compression_ratio < 0.35:
                 risk_score += 1
 
-        # Characteristic 2: Medium compression
+        # Characteristic 2: Medium compression (0.50-0.65)
         if self.config.filter_medium_compression:
             if 0.50 <= compression_ratio <= 0.65:
                 risk_score += 1
 
-        # Characteristic 3: Downward post-entry movement heuristic
-        # If close < open and close near low, indicates downward pressure
-        candle_range = current_high - current_low
-        if candle_range > 0:
-            close_position = current_close - current_low
-            if (current_close < current_open) and (close_position < candle_range * 0.3):
-                risk_score += 1
+        # Characteristic 3: Post-exit downward movement
+        # If negative move is < -0.5%, it's a killer characteristic
+        if post_exit_down_move < -0.5:
+            risk_score += 1
 
         return risk_score
 
