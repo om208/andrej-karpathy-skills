@@ -24,7 +24,7 @@ min_compression_ratio = input.float(0.0, title="Min Compression Ratio", minval=0
 max_compression_ratio = input.float(1.0, title="Max Compression Ratio", minval=0.0, maxval=1.0)
 
 lot1_tp_pips = input.float(250, title="Lot 1 Take Profit (pips)", minval=50, maxval=1000)
-lot2_hold_minutes = input.int(159, title="Lot 2 Hold Time (minutes)", minval=60, maxval=480)
+lot2_hold_bars = input.int(159, title="Lot 2 Hold Time (bars - adjust for your timeframe)", minval=10, maxval=1000)
 enable_lot1 = input.bool(true, title="Enable Lot 1")
 enable_lot2 = input.bool(true, title="Enable Lot 2")
 
@@ -94,8 +94,7 @@ var string lot2_exit_reason = ""
 position_size = (initial_capital * lot_size_percent) / (current_close > 0 ? current_close : 1)
 lot_size = position_size / 2
 tp_points = lot1_tp_pips / 10000
-bars_per_minute = 1.0 / timeframe.in_minutes()
-bars_for_159_minutes = lot2_hold_minutes * bars_per_minute
+bars_for_hold = lot2_hold_bars
 
 // ============================================================================
 // SECTION 5: ENTRY EXECUTION
@@ -122,7 +121,7 @@ if lot1_active and not lot1_closed
         lot1_closed := true
         lot1_exit_reason := "TP +250 pips"
     else
-        if bars_held >= bars_for_159_minutes and bar_index > entry_bar
+        if bars_held >= bars_for_hold and bar_index > entry_bar
             lot1_pnl := (current_close - entry_price) * lot_size
             lot1_closed := true
             lot1_exit_reason := "Time 159min"
@@ -133,7 +132,7 @@ if lot1_active and not lot1_closed
 
 if lot2_active and not lot2_closed
     bars_held = bar_index - entry_bar
-    if bars_held >= bars_for_159_minutes and bar_index > entry_bar
+    if bars_held >= bars_for_hold and bar_index > entry_bar
         lot2_pnl := (current_close - entry_price) * lot_size
         lot2_closed := true
         lot2_exit_reason := "Time 159min"
@@ -185,7 +184,7 @@ if lot2_closed
     strategy.exit("Exit L2 Time", "Lot2", comment="Exit L2 Time")
 
 bars_since_entry = lot1_active ? bar_index - entry_bar : 0
-if bars_since_entry >= bars_for_159_minutes and bars_since_entry > 0
+if bars_since_entry >= bars_for_hold and bars_since_entry > 0
     strategy.close_all(comment="Max Time Reached")
 
 // ============================================================================
