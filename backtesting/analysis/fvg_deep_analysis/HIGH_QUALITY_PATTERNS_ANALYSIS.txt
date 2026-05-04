@@ -1,0 +1,157 @@
+
+========================================================================================================================
+HIGH QUALITY FVG PATTERN FORMATION ANALYSIS
+Top 10 Patterns - 1-Minute and 5-Minute Timeframes
+========================================================================================================================
+
+========================================================================================================================
+1-MINUTE TIMEFRAME REPORT
+========================================================================================================================
+
+========================================================================================================================
+5-MINUTE TIMEFRAME REPORT
+========================================================================================================================
+
+========================================================================================================================
+TOP 10 HIGH-QUALITY FVG PATTERN FORMATIONS
+========================================================================================================================
+
+========================================================================================================================
+PATTERN #1: HIDDEN_REVERSAL_UPPER (1M)
+========================================================================================================================
+Frequency:                   9,362 times (20.24%)
+Direction Split:             9362 UPSIDE | 0 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       2,382.85 points
+  Maximum Downside Move:     1,342.67 points
+
+Average Move:
+  Average Upside Move:       1,104.88 points (9362 patterns)
+  Average Downside Move:     N/A (0 patterns)
+
+========================================================================================================================
+PATTERN #2: HIDDEN_REVERSAL_LOWER (1M)
+========================================================================================================================
+Frequency:                   8,553 times (18.49%)
+Direction Split:             0 UPSIDE | 8553 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       1,394.43 points
+  Maximum Downside Move:     2,509.76 points
+
+Average Move:
+  Average Upside Move:       N/A (0 patterns)
+  Average Downside Move:     1,091.96 points (8553 patterns)
+
+========================================================================================================================
+PATTERN #3: BALANCED_UPPER (1M)
+========================================================================================================================
+Frequency:                   7,940 times (17.17%)
+Direction Split:             7940 UPSIDE | 0 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       2,235.93 points
+  Maximum Downside Move:     1,331.54 points
+
+Average Move:
+  Average Upside Move:       1,064.27 points (7940 patterns)
+  Average Downside Move:     N/A (0 patterns)
+
+========================================================================================================================
+PATTERN #4: BALANCED_LOWER (1M)
+========================================================================================================================
+Frequency:                   6,633 times (14.34%)
+Direction Split:             0 UPSIDE | 6633 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       1,402.26 points
+  Maximum Downside Move:     2,244.42 points
+
+Average Move:
+  Average Upside Move:       N/A (0 patterns)
+  Average Downside Move:     1,040.80 points (6633 patterns)
+
+========================================================================================================================
+PATTERN #5: IDEAL_DOJI_LOWER (1M)
+========================================================================================================================
+Frequency:                   3,444 times (7.45%)
+Direction Split:             2542 UPSIDE | 902 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       2,250.98 points
+  Maximum Downside Move:     1,934.19 points
+
+Average Move:
+  Average Upside Move:       1,103.43 points (2542 patterns)
+  Average Downside Move:     1,033.57 points (902 patterns)
+
+========================================================================================================================
+PATTERN #6: IDEAL_DOJI_UPPER (1M)
+========================================================================================================================
+Frequency:                   3,409 times (7.37%)
+Direction Split:             1166 UPSIDE | 2243 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       2,097.81 points
+  Maximum Downside Move:     2,220.56 points
+
+Average Move:
+  Average Upside Move:       1,060.96 points (1166 patterns)
+  Average Downside Move:     1,065.86 points (2243 patterns)
+
+========================================================================================================================
+PATTERN #7: STRONG_UPPER_BIAS (1M)
+========================================================================================================================
+Frequency:                   3,096 times (6.69%)
+Direction Split:             3096 UPSIDE | 0 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       2,306.60 points
+  Maximum Downside Move:     1,323.50 points
+
+Average Move:
+  Average Upside Move:       1,048.31 points (3096 patterns)
+  Average Downside Move:     N/A (0 patterns)
+
+========================================================================================================================
+PATTERN #8: STRONG_LOWER_BIAS (1M)
+========================================================================================================================
+Frequency:                   2,471 times (5.34%)
+Direction Split:             0 UPSIDE | 2471 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       1,337.88 points
+  Maximum Downside Move:     2,336.19 points
+
+Average Move:
+  Average Upside Move:       N/A (0 patterns)
+  Average Downside Move:     1,043.62 points (2471 patterns)
+
+========================================================================================================================
+PATTERN #9: BALANCED_UPPER (5M)
+========================================================================================================================
+Frequency:                   1,410 times (22.29%)
+Direction Split:             1410 UPSIDE | 0 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       953,912.90 points
+  Maximum Downside Move:     389,380.32 points
+
+Average Move:
+  Average Upside Move:       134,341.27 points (1410 patterns)
+  Average Downside Move:     N/A (0 patterns)
+
+========================================================================================================================
+PATTERN #10: STRONG_UPPER_BIAS (5M)
+========================================================================================================================
+Frequency:                   959 times (15.16%)
+Direction Split:             959 UPSIDE | 0 DOWNSIDE
+
+Maximum Move Range:
+  Maximum Upside Move:       918,416.87 points
+  Maximum Downside Move:     328,412.14 points
+
+Average Move:
+  Average Upside Move:       133,822.18 points (959 patterns)
+  Average Downside Move:     N/A (0 patterns)
