@@ -150,20 +150,23 @@ if position_closed and (lot1_active or lot2_active)
     lot2_active := false
 
 // ============================================================================
-// SECTION 9: CHART VISUALIZATION (GLOBAL SCOPE - NO IF BLOCKS)
+// SECTION 9: CHART VISUALIZATION
 // ============================================================================
 
-plot(sma_show_on_chart ? sma : na(), title="SMA(196)", color=color.blue, linewidth=2)
+if sma_show_on_chart
+    plot(sma, title="SMA(196)", color=color.blue, linewidth=2)
 
-bgcolor(show_entry_signals and is_inside_bar ? color.new(color.aqua, 80) : na(), title="Inside Bar")
+if show_entry_signals and is_inside_bar
+    bgcolor(color.new(color.aqua, 80), title="Inside Bar")
 
-plotshape(show_entry_signals and signal_detected ? signal_detected : na(), style=shape.flag, location=location.top, color=color.green, title="Signal Detected")
+if show_entry_signals and signal_detected
+    plotshape(series=signal_detected, style=shape.flag, location=location.top, color=color.green, title="Signal Detected")
 
-plot(show_entry_signals and entry_decision ? entry_price : na(), style=plot.style_linebr, color=color.green, linewidth=3, title="Entry Price")
+if show_entry_signals and entry_decision
+    plot(entry_price, style=plot.style_linebr, color=color.green, linewidth=3, title="Entry Price")
 
-// Compression ratio label (GLOBAL SCOPE)
-label_color = show_compression_values ? (compression_ratio > 0.65 ? color.red : compression_ratio < 0.35 ? color.orange : color.green) : na()
 if show_compression_values
+    label_color = compression_ratio > 0.65 ? color.red : compression_ratio < 0.35 ? color.orange : color.green
     label.new(bar_index, high + (high * 0.01), text=str.format("Comp: {0,number,0.00}", compression_ratio), color=label_color, textcolor=color.white, style=label.style_label_center)
 
 // ============================================================================
