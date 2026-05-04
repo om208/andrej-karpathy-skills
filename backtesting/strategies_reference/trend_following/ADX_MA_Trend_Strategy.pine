@@ -1,0 +1,110 @@
+//@version=5
+strategy("ADX + Moving Average Trend", shorttitle="ADX-MA", overlay=true, pyramiling=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+adx_length = input.int(14, title="ADX Length", minval=5, maxval=50)
+adx_threshold = input.float(25.0, title="ADX Threshold", minval=10.0, maxval=50.0)
+ma_fast = input.int(20, title="Fast MA Period", minval=5, maxval=50)
+ma_slow = input.int(50, title="Slow MA Period", minval=50, maxval=200)
+tp_pips = input.float(150, title="Take Profit (pips)", minval=50, maxval=500)
+sl_pips = input.float(80, title="Stop Loss (pips)", minval=20, maxval=200)
+
+show_ma = input.bool(true, title="Show Moving Averages")
+show_adx = input.bool(true, title="Show ADX")
+
+// ============================================================================
+// SECTION 2: ADX CALCULATIONS
+// ============================================================================
+
+adx_value = ta.adx(adx_length)
+di_plus = ta.di(adx_length).plus
+di_minus = ta.di(adx_length).minus
+
+// ============================================================================
+// SECTION 3: MOVING AVERAGE CALCULATIONS
+// ============================================================================
+
+ma_fast_val = ta.sma(close, ma_fast)
+ma_slow_val = ta.sma(close, ma_slow)
+
+// ============================================================================
+// SECTION 4: SIGNAL GENERATION
+// ============================================================================
+
+strong_trend = adx_value > adx_threshold
+bullish_ma = ma_fast_val > ma_slow_val
+bearish_ma = ma_fast_val < ma_slow_val
+di_bullish = di_plus > di_minus
+di_bearish = di_minus > di_plus
+
+entry_long = strong_trend and bullish_ma and di_bullish and close > ma_fast_val
+entry_short = strong_trend and bearish_ma and di_bearish and close < ma_fast_val
+
+// ============================================================================
+// SECTION 5: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var string direction = ""
+var float entry_price = 0.0
+
+if entry_long and not in_position
+    in_position := true
+    direction := "LONG"
+    entry_price := close
+    strategy.entry("Long", strategy.long)
+
+if entry_short and not in_position
+    in_position := true
+    direction := "SHORT"
+    entry_price := close
+    strategy.entry("Short", strategy.short)
+
+// ============================================================================
+// SECTION 6: EXIT LOGIC
+// ============================================================================
+
+if in_position
+    if direction == "LONG"
+        tp_level = entry_price + (tp_pips / 10000)
+        sl_level = entry_price - (sl_pips / 10000)
+        if high >= tp_level or low <= sl_level or (adx_value < 20)
+            in_position := false
+            strategy.close("Long")
+    else if direction == "SHORT"
+        tp_level = entry_price - (tp_pips / 10000)
+        sl_level = entry_price + (sl_pips / 10000)
+        if low <= tp_level or high >= sl_level or (adx_value < 20)
+            in_position := false
+            strategy.close("Short")
+
+// ============================================================================
+// SECTION 7: VISUALIZATION
+// ============================================================================
+
+if show_ma
+    plot(ma_fast_val, title="Fast MA", color=color.blue, linewidth=2)
+    plot(ma_slow_val, title="Slow MA", color=color.red, linewidth=2)
+
+if show_adx
+    plot(adx_value, title="ADX", color=color.orange, linewidth=2)
+    hline(adx_threshold, linestyle=hline.style_dashed, color=color.gray, title="ADX Threshold")
+
+if entry_long
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, size=size.normal)
+
+if entry_short
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red, size=size.normal)
+
+// ============================================================================
+// SECTION 8: ALERTS
+// ============================================================================
+
+if entry_long
+    alert(str.format("🟢 ADX-MA LONG | ADX: {0,number,0.0} | MA Diff: {1,number,0.00000}", adx_value, ma_fast_val - ma_slow_val), freq=alert.freq_once_per_bar_close)
+
+if entry_short
+    alert(str.format("🔴 ADX-MA SHORT | ADX: {0,number,0.0} | MA Diff: {1,number,0.00000}", adx_value, ma_fast_val - ma_slow_val), freq=alert.freq_once_per_bar_close)

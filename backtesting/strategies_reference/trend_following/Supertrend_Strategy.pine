@@ -1,0 +1,106 @@
+//@version=5
+strategy("Supertrend Strategy", shorttitle="ST-TREND", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+atr_period = input.int(10, title="ATR Period", minval=5, maxval=50)
+atr_multiplier = input.float(3.0, title="ATR Multiplier", minval=1.0, maxval=5.0, step=0.5)
+risk_percent = input.float(2.0, title="Risk per Trade (%)", minval=0.1, maxval=10)
+
+show_supertrend = input.bool(true, title="Show Supertrend")
+show_atr = input.bool(false, title="Show ATR")
+
+// ============================================================================
+// SECTION 2: SUPERTREND CALCULATIONS
+// ============================================================================
+
+hl_avg = (high + low) / 2
+atr_value = ta.atr(atr_period)
+upper_band = hl_avg + (atr_multiplier * atr_value)
+lower_band = hl_avg - (atr_multiplier * atr_value)
+
+supertrend_raw = upper_band < upper_band[1] ? upper_band : upper_band[1]
+supertrend_lower = lower_band > lower_band[1] ? lower_band : lower_band[1]
+
+supertrend_final = close <= supertrend_raw ? supertrend_raw : supertrend_lower
+
+// ============================================================================
+// SECTION 3: TREND DETECTION
+// ============================================================================
+
+trend_up = close > supertrend_final
+trend_down = close < supertrend_final
+
+crossover_up = trend_up and not trend_up[1]
+crossover_down = trend_down and not trend_down[1]
+
+// ============================================================================
+// SECTION 4: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var string current_direction = ""
+var float entry_price = 0.0
+var float stop_loss = 0.0
+
+if crossover_up and not in_position
+    in_position := true
+    current_direction := "LONG"
+    entry_price := close
+    stop_loss := supertrend_final
+    strategy.entry("Long", strategy.long)
+
+if crossover_down and not in_position
+    in_position := true
+    current_direction := "SHORT"
+    entry_price := close
+    stop_loss := supertrend_final
+    strategy.entry("Short", strategy.short)
+
+// ============================================================================
+// SECTION 5: EXIT LOGIC
+// ============================================================================
+
+if in_position and current_direction == "LONG"
+    if close <= supertrend_final
+        in_position := false
+        current_direction := ""
+        strategy.close("Long")
+
+if in_position and current_direction == "SHORT"
+    if close >= supertrend_final
+        in_position := false
+        current_direction := ""
+        strategy.close("Short")
+
+// ============================================================================
+// SECTION 6: VISUALIZATION
+// ============================================================================
+
+if show_supertrend
+    plot(supertrend_final, title="Supertrend", color=trend_up ? color.green : color.red, linewidth=2)
+
+if show_atr
+    plot(atr_value, title="ATR", color=color.orange, linewidth=1)
+
+if crossover_up
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, size=size.normal, title="Uptrend Start")
+
+if crossover_down
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red, size=size.normal, title="Downtrend Start")
+
+// ============================================================================
+// SECTION 7: ALERTS
+// ============================================================================
+
+if crossover_up
+    alert(str.format("🟢 SUPERTREND UPTREND | Entry: {0,number,0.00000} | Stop: {1,number,0.00000}", entry_price, supertrend_final), freq=alert.freq_once_per_bar_close)
+
+if crossover_down
+    alert(str.format("🔴 SUPERTREND DOWNTREND | Entry: {0,number,0.00000} | Stop: {1,number,0.00000}", entry_price, supertrend_final), freq=alert.freq_once_per_bar_close)
+
+if in_position
+    if (current_direction == "LONG" and close <= supertrend_final) or (current_direction == "SHORT" and close >= supertrend_final)
+        alert(str.format("❌ SUPERTREND EXIT | Direction: {0} | Exit Price: {1,number,0.00000}", current_direction, close), freq=alert.freq_once_per_bar_close)

@@ -1,0 +1,105 @@
+//@version=5
+strategy("RSI Divergence Mean Reversion", shorttitle="RSI-DIV", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+rsi_length = input.int(14, title="RSI Length", minval=5, maxval=50)
+overbought_level = input.int(70, title="Overbought Level", minval=50, maxval=90)
+oversold_level = input.int(30, title="Oversold Level", minval=10, maxval=50)
+lookback = input.int(10, title="Lookback Period", minval=5, maxval=30)
+tp_pips = input.float(100, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+// ============================================================================
+// SECTION 2: RSI CALCULATIONS
+// ============================================================================
+
+rsi = ta.rsi(close, rsi_length)
+rsi_prev = rsi[1]
+
+// ============================================================================
+// SECTION 3: DIVERGENCE DETECTION
+// ============================================================================
+
+recent_high = ta.highest(high, lookback)
+recent_low = ta.lowest(low, lookback)
+rsi_high = ta.highest(rsi, lookback)
+rsi_low = ta.lowest(rsi, lookback)
+
+// Bearish divergence: Price high but RSI lower
+bearish_div = (high > recent_high[1]) and (rsi < rsi_high[1]) and (rsi > overbought_level)
+
+// Bullish divergence: Price low but RSI higher
+bullish_div = (low < recent_low[1]) and (rsi > rsi_low[1]) and (rsi < oversold_level)
+
+// ============================================================================
+// SECTION 4: ENTRY SIGNALS
+// ============================================================================
+
+entry_short = bearish_div and rsi > overbought_level and rsi_prev <= overbought_level
+entry_long = bullish_div and rsi < oversold_level and rsi_prev >= oversold_level
+
+// ============================================================================
+// SECTION 5: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var string pos_type = ""
+var float ent_price = 0.0
+
+if entry_long and not in_position
+    in_position := true
+    pos_type := "LONG"
+    ent_price := close
+    strategy.entry("RSI Long", strategy.long)
+
+if entry_short and not in_position
+    in_position := true
+    pos_type := "SHORT"
+    ent_price := close
+    strategy.entry("RSI Short", strategy.short)
+
+// ============================================================================
+// SECTION 6: EXIT LOGIC
+// ============================================================================
+
+if in_position
+    if pos_type == "LONG"
+        tp = ent_price + (tp_pips / 10000)
+        sl = ent_price - (sl_pips / 10000)
+        if high >= tp or low <= sl
+            in_position := false
+            strategy.close("RSI Long")
+    else
+        tp = ent_price - (tp_pips / 10000)
+        sl = ent_price + (sl_pips / 10000)
+        if low <= tp or high >= sl
+            in_position := false
+            strategy.close("RSI Short")
+
+// ============================================================================
+// SECTION 7: VISUALIZATION
+// ============================================================================
+
+plot(rsi, title="RSI", color=color.blue, linewidth=2)
+hline(overbought_level, title="Overbought", color=color.red, linestyle=hline.style_dashed)
+hline(oversold_level, title="Oversold", color=color.green, linestyle=hline.style_dashed)
+hline(50, title="Middle", color=color.gray, linestyle=hline.style_dotted)
+
+if entry_long
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, size=size.normal)
+
+if entry_short
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red, size=size.normal)
+
+// ============================================================================
+// SECTION 8: ALERTS
+// ============================================================================
+
+if entry_long
+    alert(str.format("🟢 RSI BULLISH DIVERGENCE | RSI: {0,number,0.0} | Price: {1,number,0.00000}", rsi, close), freq=alert.freq_once_per_bar_close)
+
+if entry_short
+    alert(str.format("🔴 RSI BEARISH DIVERGENCE | RSI: {0,number,0.0} | Price: {1,number,0.00000}", rsi, close), freq=alert.freq_once_per_bar_close)

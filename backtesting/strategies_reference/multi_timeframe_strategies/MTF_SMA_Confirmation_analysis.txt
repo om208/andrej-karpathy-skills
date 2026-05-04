@@ -1,0 +1,76 @@
+STRATEGY: Multi-Timeframe SMA Confirmation
+========================================
+
+CATEGORY: Multi-Timeframe Strategies
+
+DESCRIPTION:
+Confirms current timeframe trends with a higher timeframe moving average to filter out false signals. Uses two SMAs (fast and slow) on the current timeframe and confirms the trend on a user-selected higher timeframe.
+
+KEY FEATURES:
+- Dual SMA crossover on current timeframe
+- Multi-timeframe confirmation using request.security()
+- Takes trades only when both timeframes align
+- Simple risk management with TP-based exits
+- Visual indicators on chart for signal detection
+
+ENTRY CONDITIONS:
+1. Fast SMA > Slow SMA (current timeframe)
+2. Fast SMA > Slow SMA (higher timeframe)
+3. Price > Slow SMA (higher timeframe) - confirms uptrend
+4. Not already in position
+
+EXIT CONDITIONS:
+1. Take profit level reached (default: 100 pips)
+2. Price closes below slow SMA (trend reversal)
+3. Position duration limit (if added)
+
+PINE SCRIPT v5 SYNTAX PATTERNS DEMONSTRATED:
+1. request.security() - Multi-timeframe calculations (lines 25-27)
+2. Proper variable initialization with 'var' keyword (lines 40-41)
+3. Global scope if blocks with strategy.entry() and strategy.close() (lines 43-51)
+4. Plot functions at global scope with conditional visibility (lines 56-65)
+5. plotshape() for visual signal markers (lines 62, 65)
+6. alert() with string formatting (lines 71-76)
+
+SCOPE RULES APPLIED:
+- plot() functions at global scope only (NOT inside nested if blocks)
+- strategy.entry() and strategy.close() at global scope
+- var keyword for persistent variables across candles
+- alert() for notifications on signal detection
+
+INDICATOR CALCULATIONS:
+- ta.sma(close, period) - Simple Moving Average
+- request.security(syminfo.tickerid, timeframe, expression) - MTF data fetch
+- Current timeframe: close, fast_sma, slow_sma
+- Higher timeframe: mtf_close, mtf_fast_sma, mtf_slow_sma
+
+DEFAULT PARAMETERS:
+- Fast SMA: 20 period
+- Slow SMA: 50 period
+- MTF Timeframe: 60 minutes (adjustable)
+- Risk per Trade: 2%
+- Take Profit: 100 pips
+- Commission: 0.1%
+- Initial Capital: $1000
+
+ERROR PREVENTION APPLIED:
+- No ternary operators split across lines (L-03)
+- strategy() on single line (L-01)
+- No plot functions in local scope (L-05)
+- All drawing functions at global scope (L-04)
+
+TESTING NOTES:
+- Use on EURUSD or GBPUSD for FX testing
+- Adjust SMA periods based on timeframe and instrument
+- Higher MTF timeframe reduces false signals but may miss quick moves
+- Backtest with 1-year minimum data for validation
+
+COMMON ADJUSTMENTS:
+1. Change fast_sma_period for faster/slower responsive entries
+2. Modify take_profit_pips for different risk/reward ratios
+3. Adjust mtf_timeframe for different market conditions
+4. Add ATR-based stop loss for better risk management
+5. Include volume confirmation for stronger signals
+
+STATUS: ✓ VERIFIED - All syntax correct, no errors
+CREATED: 2026-05-04

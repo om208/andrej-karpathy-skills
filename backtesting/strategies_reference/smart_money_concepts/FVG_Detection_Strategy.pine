@@ -1,0 +1,110 @@
+//@version=5
+strategy("Fair Value Gap (FVG) Detection", shorttitle="FVG-DET", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+min_gap_percent = input.float(0.5, title="Min Gap Size (%)", minval=0.1, maxval=2.0)
+fvg_type_filter = input.string("Both", title="FVG Type", options=["Bullish", "Bearish", "Both"])
+lookback_bars = input.int(20, title="Lookback Period", minval=5, maxval=50)
+tp_pips = input.float(150, title="Take Profit (pips)", minval=50, maxval=500)
+sl_pips = input.float(50, title="Stop Loss (pips)", minval=20, maxval=200)
+
+show_fvg_boxes = input.bool(true, title="Show FVG Boxes")
+show_entry_markers = input.bool(true, title="Show Entry Markers")
+
+// ============================================================================
+// SECTION 2: FVG DETECTION CALCULATIONS
+// ============================================================================
+
+prev_high = high[2]
+prev_low = low[2]
+prev_close = close[2]
+curr_high = high[1]
+curr_low = low[1]
+curr_close = close[1]
+
+bullish_fvg = (prev_high < curr_low) and ((curr_high - prev_high) / prev_high > (min_gap_percent / 100))
+bearish_fvg = (prev_low > curr_high) and ((prev_low - curr_low) / curr_low > (min_gap_percent / 100))
+
+fvg_detected = (fvg_type_filter == "Both") ? (bullish_fvg or bearish_fvg) : (fvg_type_filter == "Bullish" ? bullish_fvg : bearish_fvg)
+
+// ============================================================================
+// SECTION 3: PRICE ACTION CONFIRMATION
+// ============================================================================
+
+recent_low = ta.lowest(low, lookback_bars)
+recent_high = ta.highest(high, lookback_bars)
+price_near_fvg = (bullish_fvg and close <= prev_high + (high - low)) or (bearish_fvg and close >= prev_low - (high - low))
+
+entry_signal = fvg_detected and price_near_fvg
+
+// ============================================================================
+// SECTION 4: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var float entry_price = 0.0
+var string fvg_direction = ""
+
+if entry_signal and not in_position
+    in_position := true
+    entry_price := close
+    fvg_direction := bullish_fvg ? "LONG" : "SHORT"
+    if fvg_direction == "LONG"
+        strategy.entry("FVG Long", strategy.long)
+    else
+        strategy.entry("FVG Short", strategy.short)
+
+// ============================================================================
+// SECTION 5: EXIT MANAGEMENT
+// ============================================================================
+
+if in_position
+    if fvg_direction == "LONG"
+        tp_level = entry_price + (tp_pips / 10000)
+        sl_level = entry_price - (sl_pips / 10000)
+        if high >= tp_level
+            in_position := false
+            strategy.close("FVG Long")
+        else if low <= sl_level
+            in_position := false
+            strategy.close("FVG Long")
+    else
+        tp_level = entry_price - (tp_pips / 10000)
+        sl_level = entry_price + (sl_pips / 10000)
+        if low <= tp_level
+            in_position := false
+            strategy.close("FVG Short")
+        else if high >= sl_level
+            in_position := false
+            strategy.close("FVG Short")
+
+// ============================================================================
+// SECTION 6: VISUALIZATION
+// ============================================================================
+
+if show_fvg_boxes and fvg_detected
+    box_color = bullish_fvg ? color.new(color.green, 80) : color.new(color.red, 80)
+    if bullish_fvg
+        box.new(bar_index[2], prev_high, bar_index[1], curr_low, bgcolor=box_color, border_color=color.green, border_width=2)
+    else
+        box.new(bar_index[2], prev_low, bar_index[1], curr_high, bgcolor=box_color, border_color=color.red, border_width=2)
+
+if show_entry_markers and entry_signal
+    marker_color = bullish_fvg ? color.green : color.red
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=marker_color, size=size.normal, title="FVG Entry")
+
+// ============================================================================
+// SECTION 7: ALERTS
+// ============================================================================
+
+if bullish_fvg
+    alert(str.format("📈 BULLISH FVG | Gap: {0,number,0.00}% | Level: {1,number,0.00000}", ((curr_high - prev_high) / prev_high) * 100, prev_high), freq=alert.freq_once_per_bar_close)
+
+if bearish_fvg
+    alert(str.format("📉 BEARISH FVG | Gap: {0,number,0.00}% | Level: {1,number,0.00000}", ((prev_low - curr_low) / curr_low) * 100, prev_low), freq=alert.freq_once_per_bar_close)
+
+if entry_signal
+    alert(str.format("🎯 FVG ENTRY SIGNAL | Direction: {0} | Price: {1,number,0.00000}", fvg_direction, close), freq=alert.freq_once_per_bar_close)

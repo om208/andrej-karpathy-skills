@@ -1,0 +1,110 @@
+//@version=5
+strategy("Bollinger Bands Mean Reversion", shorttitle="BB-MR", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+bb_length = input.int(20, title="Bollinger Band Length", minval=10, maxval=50)
+bb_stddev = input.float(2.0, title="Bollinger Band Std Dev", minval=1.0, maxval=3.0, step=0.5)
+momentum_period = input.int(5, title="Momentum Period", minval=3, maxval=14)
+tp_pips = input.float(80, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(60, title="Stop Loss (pips)", minval=20, maxval=150)
+
+show_bands = input.bool(true, title="Show Bollinger Bands")
+show_basis = input.bool(true, title="Show Basis Line")
+
+// ============================================================================
+// SECTION 2: BOLLINGER BANDS CALCULATIONS
+// ============================================================================
+
+basis = ta.sma(close, bb_length)
+dev = bb_stddev * ta.stdev(close, bb_length)
+upper_band = basis + dev
+lower_band = basis - dev
+
+// ============================================================================
+// SECTION 3: MEAN REVERSION SIGNALS
+// ============================================================================
+
+price_at_lower = close <= lower_band
+price_at_upper = close >= upper_band
+
+momentum = close - close[momentum_period]
+positive_momentum = momentum > 0
+negative_momentum = momentum < 0
+
+// Reversal conditions
+lower_bounce = price_at_lower and positive_momentum and close > lower_band[1]
+upper_bounce = price_at_upper and negative_momentum and close < upper_band[1]
+
+entry_long = lower_bounce
+entry_short = upper_bounce
+
+// ============================================================================
+// SECTION 4: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var string position_type = ""
+var float entry_price = 0.0
+
+if entry_long and not in_position
+    in_position := true
+    position_type := "LONG"
+    entry_price := close
+    strategy.entry("MR Long", strategy.long)
+
+if entry_short and not in_position
+    in_position := true
+    position_type := "SHORT"
+    entry_price := close
+    strategy.entry("MR Short", strategy.short)
+
+// ============================================================================
+// SECTION 5: EXIT LOGIC
+// ============================================================================
+
+if in_position
+    if position_type == "LONG"
+        tp_level = entry_price + (tp_pips / 10000)
+        sl_level = entry_price - (sl_pips / 10000)
+        if high >= tp_level or low <= sl_level
+            in_position := false
+            strategy.close("MR Long")
+    else if position_type == "SHORT"
+        tp_level = entry_price - (tp_pips / 10000)
+        sl_level = entry_price + (sl_pips / 10000)
+        if low <= tp_level or high >= sl_level
+            in_position := false
+            strategy.close("MR Short")
+
+// ============================================================================
+// SECTION 6: VISUALIZATION
+// ============================================================================
+
+if show_bands
+    plot(upper_band, title="Upper Band", color=color.red, linewidth=1)
+    plot(lower_band, title="Lower Band", color=color.green, linewidth=1)
+
+if show_basis
+    plot(basis, title="Basis", color=color.blue, linewidth=2)
+
+band_fill_color = (close > basis) ? color.new(color.green, 90) : color.new(color.red, 90)
+fill(plot(upper_band, display=display.none), plot(lower_band, display=display.none), color=band_fill_color, title="Band Fill")
+
+if entry_long
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, size=size.normal, title="Long Signal")
+
+if entry_short
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red, size=size.normal, title="Short Signal")
+
+// ============================================================================
+// SECTION 7: ALERTS
+// ============================================================================
+
+if entry_long
+    alert(str.format("🟢 BOLLINGER BANDS MEAN REVERSION - LONG | Entry: {0,number,0.00000} | Basis: {1,number,0.00000} | Momentum: {2,number,0.00000}", close, basis, momentum), freq=alert.freq_once_per_bar_close)
+
+if entry_short
+    alert(str.format("🔴 BOLLINGER BANDS MEAN REVERSION - SHORT | Entry: {0,number,0.00000} | Basis: {1,number,0.00000} | Momentum: {2,number,0.00000}", close, basis, momentum), freq=alert.freq_once_per_bar_close)

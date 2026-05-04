@@ -1,0 +1,106 @@
+//@version=5
+strategy("Pivot Points Strategy", shorttitle="PIVOT", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+pivot_type = input.string("Standard", title="Pivot Type", options=["Standard", "Fibonacci", "Woodie"])
+tp_offset_pips = input.float(100, title="TP Offset (pips)", minval=20, maxval=300)
+sl_offset_pips = input.float(60, title="SL Offset (pips)", minval=20, maxval=150)
+show_levels = input.bool(true, title="Show Pivot Levels")
+confirm_volume = input.bool(true, title="Confirm with Volume")
+
+// ============================================================================
+// SECTION 2: PIVOT CALCULATIONS
+// ============================================================================
+
+daily_high = request.security(syminfo.tickerid, "D", high[1])
+daily_low = request.security(syminfo.tickerid, "D", low[1])
+daily_close = request.security(syminfo.tickerid, "D", close[1])
+
+pivot = (daily_high + daily_low + daily_close) / 3
+r1 = (2 * pivot) - daily_low
+s1 = (2 * pivot) - daily_high
+r2 = pivot + (daily_high - daily_low)
+s2 = pivot - (daily_high - daily_low)
+
+// ============================================================================
+// SECTION 3: SIGNAL DETECTION
+// ============================================================================
+
+price_bounces_s1 = (low <= s1) and (close > s1)
+price_bounces_r1 = (high >= r1) and (close < r1)
+price_breaks_r1 = close > r1 and close[1] <= r1
+price_breaks_s1 = close < s1 and close[1] >= s1
+
+avg_volume = ta.sma(volume, 20)
+vol_confirms = confirm_volume ? volume > avg_volume : true
+
+entry_long = (price_bounces_s1 and vol_confirms) or (price_breaks_s1)
+entry_short = (price_bounces_r1 and vol_confirms) or (price_breaks_r1)
+
+// ============================================================================
+// SECTION 4: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var string position_direction = ""
+var float position_entry = 0.0
+
+if entry_long and not in_position
+    in_position := true
+    position_direction := "LONG"
+    position_entry := close
+    strategy.entry("PP Long", strategy.long)
+
+if entry_short and not in_position
+    in_position := true
+    position_direction := "SHORT"
+    position_entry := close
+    strategy.entry("PP Short", strategy.short)
+
+// ============================================================================
+// SECTION 5: EXIT LOGIC
+// ============================================================================
+
+if in_position
+    if position_direction == "LONG"
+        tp_target = position_entry + (tp_offset_pips / 10000)
+        sl_target = position_entry - (sl_offset_pips / 10000)
+        if high >= tp_target or low <= sl_target
+            in_position := false
+            strategy.close("PP Long")
+    else
+        tp_target = position_entry - (tp_offset_pips / 10000)
+        sl_target = position_entry + (sl_offset_pips / 10000)
+        if low <= tp_target or high >= sl_target
+            in_position := false
+            strategy.close("PP Short")
+
+// ============================================================================
+// SECTION 6: VISUALIZATION
+// ============================================================================
+
+if show_levels
+    plot(pivot, title="Pivot", color=color.blue, linewidth=2)
+    plot(r1, title="R1", color=color.red, linewidth=1)
+    plot(s1, title="S1", color=color.green, linewidth=1)
+    plot(r2, title="R2", color=color.new(color.red, 50), linewidth=1, style=plot.style_dashed)
+    plot(s2, title="S2", color=color.new(color.green, 50), linewidth=1, style=plot.style_dashed)
+
+if entry_long
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, size=size.normal)
+
+if entry_short
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red, size=size.normal)
+
+// ============================================================================
+// SECTION 7: ALERTS
+// ============================================================================
+
+if entry_long
+    alert(str.format("🟢 PIVOT LONG | Entry: {0,number,0.00000} | S1: {1,number,0.00000} | Volume: {2,number,0}", close, s1, volume), freq=alert.freq_once_per_bar_close)
+
+if entry_short
+    alert(str.format("🔴 PIVOT SHORT | Entry: {0,number,0.00000} | R1: {1,number,0.00000} | Volume: {2,number,0}", close, r1, volume), freq=alert.freq_once_per_bar_close)

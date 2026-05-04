@@ -1,0 +1,88 @@
+//@version=5
+strategy("Multi-Timeframe SMA Confirmation", shorttitle="MTF-SMA", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+fast_sma_period = input.int(20, title="Fast SMA Period", minval=5, maxval=50)
+slow_sma_period = input.int(50, title="Slow SMA Period", minval=50, maxval=200)
+mtf_timeframe = input.timeframe("60", title="Multi-Timeframe Period")
+risk_percent = input.float(2.0, title="Risk per Trade (%)", minval=0.1, maxval=10)
+take_profit_pips = input.float(100, title="Take Profit (pips)", minval=10, maxval=500)
+
+show_sma_fast = input.bool(true, title="Show Fast SMA")
+show_sma_slow = input.bool(true, title="Show Slow SMA")
+
+// ============================================================================
+// SECTION 2: CORE CALCULATIONS (CURRENT TIMEFRAME)
+// ============================================================================
+
+fast_sma = ta.sma(close, fast_sma_period)
+slow_sma = ta.sma(close, slow_sma_period)
+
+// ============================================================================
+// SECTION 3: MULTI-TIMEFRAME CALCULATIONS
+// ============================================================================
+
+mtf_fast_sma = request.security(syminfo.tickerid, mtf_timeframe, ta.sma(close, fast_sma_period))
+mtf_slow_sma = request.security(syminfo.tickerid, mtf_timeframe, ta.sma(close, slow_sma_period))
+mtf_close = request.security(syminfo.tickerid, mtf_timeframe, close)
+
+// ============================================================================
+// SECTION 4: SIGNAL DETECTION
+// ============================================================================
+
+fast_above_slow_current = fast_sma > slow_sma
+fast_above_slow_mtf = mtf_fast_sma > mtf_slow_sma
+mtf_uptrend = mtf_close > mtf_slow_sma
+
+entry_condition = fast_above_slow_current and fast_above_slow_mtf and mtf_uptrend
+
+// ============================================================================
+// SECTION 5: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var float entry_price = 0.0
+
+if entry_condition and not in_position
+    in_position := true
+    entry_price := close
+    strategy.entry("Long", strategy.long)
+
+tp_level = entry_price + (take_profit_pips / 10000)
+
+if in_position
+    if high >= tp_level or close < slow_sma
+        in_position := false
+        strategy.close("Long")
+
+// ============================================================================
+// SECTION 6: VISUALIZATION
+// ============================================================================
+
+if show_sma_fast
+    plot(fast_sma, title="Fast SMA", color=color.blue, linewidth=2)
+
+if show_sma_slow
+    plot(slow_sma, title="Slow SMA", color=color.red, linewidth=2)
+
+plot(mtf_fast_sma, title="MTF Fast SMA", color=color.new(color.blue, 50), linewidth=1, style=plot.style_dashed)
+plot(mtf_slow_sma, title="MTF Slow SMA", color=color.new(color.red, 50), linewidth=1, style=plot.style_dashed)
+
+if entry_condition
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, title="Buy Signal")
+
+if in_position and (close < slow_sma)
+    plotshape(series=true, style=shape.xcross, location=location.abovebar, color=color.red, title="Exit Signal")
+
+// ============================================================================
+// SECTION 7: ALERTS
+// ============================================================================
+
+if entry_condition
+    alert(str.format("🟢 MTF SMA ENTRY | Price: {0,number,0.00000} | MTF Trend: {1}", close, fast_above_slow_mtf ? "BULLISH" : "BEARISH"), freq=alert.freq_once_per_bar_close)
+
+if in_position and close < slow_sma
+    alert(str.format("🔴 MTF SMA EXIT | Price: {0,number,0.00000} | Reason: SMA Crossdown", close), freq=alert.freq_once_per_bar_close)

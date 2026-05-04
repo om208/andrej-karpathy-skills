@@ -1,0 +1,104 @@
+//@version=5
+strategy("Order Block Reversal", shorttitle="OB-REV", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+lookback_bars = input.int(10, title="Lookback Period", minval=5, maxval=30)
+min_body_ratio = input.float(0.6, title="Min Body Ratio", minval=0.3, maxval=0.9)
+tp_pips = input.float(100, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(50, title="Stop Loss (pips)", minval=20, maxval=150)
+show_ob_blocks = input.bool(true, title="Show Order Blocks")
+
+// ============================================================================
+// SECTION 2: ORDER BLOCK DETECTION
+// ============================================================================
+
+bar_range = high - low
+bar_body = math.abs(close - open)
+body_ratio = bar_range > 0 ? bar_body / bar_range : 0
+
+is_bullish_candle = close > open
+is_bearish_candle = close < open
+strong_bullish = is_bullish_candle and body_ratio > min_body_ratio
+strong_bearish = is_bearish_candle and body_ratio > min_body_ratio
+
+// Find order blocks in lookback
+bullish_ob_high = ta.highest(high, lookback_bars)
+bullish_ob_low = ta.lowest(low, lookback_bars)
+bearish_ob_high = ta.highest(high, lookback_bars)
+bearish_ob_low = ta.lowest(low, lookback_bars)
+
+// Entry signals when price returns to order block
+price_at_bullish_ob = close >= bullish_ob_low and close <= bullish_ob_high and low < bullish_ob_low[1]
+price_at_bearish_ob = close >= bearish_ob_low and close <= bearish_ob_high and high > bearish_ob_high[1]
+
+entry_long = price_at_bullish_ob and strong_bullish
+entry_short = price_at_bearish_ob and strong_bearish
+
+// ============================================================================
+// SECTION 3: POSITION MANAGEMENT
+// ============================================================================
+
+var bool in_position = false
+var string position_type = ""
+var float entry_price = 0.0
+
+if entry_long and not in_position
+    in_position := true
+    position_type := "LONG"
+    entry_price := close
+    strategy.entry("OB Long", strategy.long)
+
+if entry_short and not in_position
+    in_position := true
+    position_type := "SHORT"
+    entry_price := close
+    strategy.entry("OB Short", strategy.short)
+
+// ============================================================================
+// SECTION 4: EXIT LOGIC
+// ============================================================================
+
+if in_position
+    if position_type == "LONG"
+        tp_target = entry_price + (tp_pips / 10000)
+        sl_target = entry_price - (sl_pips / 10000)
+        if high >= tp_target or low <= sl_target
+            in_position := false
+            strategy.close("OB Long")
+    else
+        tp_target = entry_price - (tp_pips / 10000)
+        sl_target = entry_price + (sl_pips / 10000)
+        if low <= tp_target or high >= sl_target
+            in_position := false
+            strategy.close("OB Short")
+
+// ============================================================================
+// SECTION 5: VISUALIZATION
+// ============================================================================
+
+if show_ob_blocks and (entry_long or entry_short)
+    box_color = entry_long ? color.new(color.green, 80) : color.new(color.red, 80)
+    border_color = entry_long ? color.green : color.red
+    if entry_long
+        box.new(bar_index - lookback_bars, bullish_ob_high, bar_index, bullish_ob_low, bgcolor=box_color, border_color=border_color, border_width=2)
+    else
+        box.new(bar_index - lookback_bars, bearish_ob_high, bar_index, bearish_ob_low, bgcolor=box_color, border_color=border_color, border_width=2)
+
+if entry_long
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, size=size.normal)
+
+if entry_short
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red, size=size.normal)
+
+// ============================================================================
+// SECTION 6: ALERTS
+// ============================================================================
+
+if entry_long
+    alert(str.format("🟢 ORDER BLOCK LONG | Price: {0,number,0.00000} | Body Ratio: {1,number,0.00}", close, body_ratio), freq=alert.freq_once_per_bar_close)
+
+if entry_short
+    alert(str.format("🔴 ORDER BLOCK SHORT | Price: {0,number,0.00000} | Body Ratio: {1,number,0.00}", close, body_ratio), freq=alert.freq_once_per_bar_close)
