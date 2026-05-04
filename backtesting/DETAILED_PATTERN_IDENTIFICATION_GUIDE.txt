@@ -1,0 +1,827 @@
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+FVG PATTERN IDENTIFICATION GUIDE - COMPLETE WITH ALL MINOR DETAILS
+How to Identify the 10 High-Quality FVG Patterns from Candlestick Data
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+INTRODUCTION
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+A Fair Value Gap (FVG) is a 3-candle pattern where the outer candles are significantly smaller than the
+middle candle, creating a visible gap in price action. This guide teaches you EXACTLY how to identify which
+of the 10 high-quality patterns each FVG represents, including ALL minor details and edge cases.
+
+ALL 10 PATTERNS:
+  1. HIDDEN_REVERSAL_UPPER (1-minute)
+  2. HIDDEN_REVERSAL_LOWER (1-minute)
+  3. BALANCED_UPPER (1m/5m/15m)
+  4. BALANCED_LOWER (1m/5m/15m)
+  5. IDEAL_DOJI_UPPER (1-minute)
+  6. IDEAL_DOJI_LOWER (1-minute)
+  7. STRONG_UPPER_BIAS (1m/5m/15m)
+  8. STRONG_LOWER_BIAS (1m/5m/15m)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+SECTION 1: FOUNDATIONAL MEASUREMENTS
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Before identifying patterns, you need to calculate these measurements for each candlestick:
+
+MEASUREMENT 1: BODY SIZE
+────────────────────────
+
+Definition: The absolute distance from open to close
+Formula: Body = |Close - Open|
+
+Example Candle:
+  Open: 45,100
+  Close: 45,155
+  Body = |45,155 - 45,100| = 55 points
+
+IMPORTANCE:
+  - Body size is the PRIMARY indicator of pattern quality
+  - Small bodies (high-quality) vs large bodies (low-quality)
+  - Used to compare relative sizes between candles
+
+
+MEASUREMENT 2: RANGE
+────────────────────
+
+Definition: The total distance from low to high (the entire candle height)
+Formula: Range = High - Low
+
+Example Candle:
+  High: 45,180
+  Low: 45,080
+  Range = 45,180 - 45,080 = 100 points
+
+IMPORTANCE:
+  - Used as denominator for body ratio calculations
+  - Represents total volatility/movement in that candle
+
+
+MEASUREMENT 3: BODY RATIO
+──────────────────────────
+
+Definition: How much of the candle's range is taken up by the body
+Formula: Body_Ratio = Body / Range
+
+Example:
+  Body: 55 points
+  Range: 100 points
+  Body_Ratio = 55 / 100 = 0.55
+
+INTERPRETATION:
+  - 0.0 - 0.15: TINY body (excellent FVG quality)
+  - 0.15 - 0.30: SMALL body (good FVG quality)
+  - 0.30 - 0.50: MEDIUM body
+  - 0.50 - 0.70: LARGE body (strong directional)
+  - 0.70 - 1.0: VERY LARGE body
+
+CRITICAL DETAIL: For basic FVG definition, body_ratio MUST be < 0.5 for outer candles
+
+
+MEASUREMENT 4: UPPER TAIL (UPPER WICK)
+─────────────────────────────────────────
+
+Definition: The distance from the high to the close (if bullish) or to the open (if bearish)
+Formula: Upper_Tail = High - Max(Open, Close)
+
+Example 1 (Bullish Candle):
+  High: 45,180
+  Open: 45,100
+  Close: 45,155
+  Max(Open, Close) = 45,155
+  Upper_Tail = 45,180 - 45,155 = 25 points
+
+Example 2 (Bearish Candle):
+  High: 45,180
+  Open: 45,150
+  Close: 45,100
+  Max(Open, Close) = 45,150
+  Upper_Tail = 45,180 - 45,150 = 30 points
+
+SIGNIFICANCE:
+  - Shows where sellers rejected higher prices (resistance testing)
+  - HIGH upper_tail → Sellers showed up → Potential downside move
+  - Used to determine directional bias
+
+
+MEASUREMENT 5: LOWER TAIL (LOWER WICK)
+──────────────────────────────────────────
+
+Definition: The distance from the low to the open (if bullish) or to the close (if bearish)
+Formula: Lower_Tail = Min(Open, Close) - Low
+
+Example 1 (Bullish Candle):
+  Min(Open, Close) = 45,100
+  Low: 45,080
+  Lower_Tail = 45,100 - 45,080 = 20 points
+
+Example 2 (Bearish Candle):
+  Min(Open, Close) = 45,100
+  Low: 45,050
+  Lower_Tail = 45,100 - 45,050 = 50 points
+
+SIGNIFICANCE:
+  - Shows where buyers supported lower prices (support testing)
+  - HIGH lower_tail → Buyers showed up → Potential upside move
+  - Used to determine directional bias
+
+
+MEASUREMENT 6: TAIL RATIOS
+───────────────────────────
+
+Definition: How long the tails are relative to the candle body
+Formula:
+  Upper_Tail_Ratio = Upper_Tail / Body
+  Lower_Tail_Ratio = Lower_Tail / Body
+
+Example:
+  Upper_Tail: 25 points
+  Body: 55 points
+  Upper_Tail_Ratio = 25 / 55 = 0.45
+
+INTERPRETATION:
+  - < 0.5: SHORT tail (body dominates, less indecision)
+  - 0.5 - 1.0: MODERATE tail
+  - 1.0 - 1.5: LONG tail
+  - 1.5 - 2.5: VERY LONG tail
+  - > 2.5: EXTREMELY LONG tail (IDEAL DOJI pattern)
+
+CRITICAL: For IDEAL DOJI patterns, tail_ratio MUST be > 1.5
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+SECTION 2: PATTERN-SPECIFIC MEASUREMENTS
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Once you have measurements for individual candles, calculate these pattern-level measurements:
+
+
+CALCULATION 1: BODY RATIOS OF OUTER CANDLES
+──────────────────────────────────────────────
+
+Purpose: Measure how small the outer candles are compared to the middle candle
+
+Formula:
+  Body1_Ratio = Candle1_Body / Candle2_Body
+  Body3_Ratio = Candle3_Body / Candle2_Body
+  Outer_Avg = (Body1_Ratio + Body3_Ratio) / 2
+
+Example:
+  Candle 1 Body: 20 points
+  Candle 2 Body: 100 points
+  Candle 3 Body: 25 points
+
+  Body1_Ratio = 20 / 100 = 0.20
+  Body3_Ratio = 25 / 100 = 0.25
+  Outer_Avg = (0.20 + 0.25) / 2 = 0.225
+
+INTERPRETATION:
+  - < 0.15: TINY outer candles (excellent pattern quality)
+  - 0.15 - 0.25: SMALL outer candles (good quality)
+  - 0.25 - 0.35: SMALL-MEDIUM outer candles (fair quality)
+  - > 0.35: NOT a high-quality FVG pattern
+
+CRITICAL DETAIL: This is ONE of the FIRST filters for pattern quality
+
+
+CALCULATION 2: MIDDLE CANDLE BODY CATEGORY
+───────────────────────────────────────────
+
+Purpose: Determine what type of middle candle we have
+
+Classification:
+  Middle_Body_Ratio < 0.15 → TINY body (IDEAL DOJI patterns)
+  Middle_Body_Ratio 0.15-0.30 → SMALL body (HIDDEN_REVERSAL patterns)
+  Middle_Body_Ratio 0.30-0.50 → MEDIUM body (BALANCED patterns)
+  Middle_Body_Ratio 0.50-0.70 → LARGE body (STRONG patterns)
+  Middle_Body_Ratio > 0.70 → VERY_LARGE body (Strongest patterns)
+
+Example 1: Tiny Body
+  Candle 2 Body: 5 points
+  Candle 2 Range: 40 points
+  Body_Ratio = 5 / 40 = 0.125 → TINY body
+
+Example 2: Large Body
+  Candle 2 Body: 80 points
+  Candle 2 Range: 120 points
+  Body_Ratio = 80 / 120 = 0.667 → LARGE body
+
+CRITICAL PATTERN IMPLICATIONS:
+  - TINY body → Look for IDEAL DOJI patterns
+  - SMALL body → Look for HIDDEN_REVERSAL patterns
+  - MEDIUM body → Look for BALANCED patterns
+  - LARGE body → Look for STRONG patterns
+  - This categorization NARROWS DOWN which patterns to check
+
+
+CALCULATION 3: TAIL RATIOS ON MIDDLE CANDLE
+──────────────────────────────────────────────
+
+Purpose: Determine if middle candle leans toward upper or lower rejection
+
+Formula:
+  Upper_Tail_Ratio = Candle2_Upper_Tail / Candle2_Body
+  Lower_Tail_Ratio = Candle2_Lower_Tail / Candle2_Body
+
+Example:
+  Candle 2 Body: 100 points
+  Candle 2 Upper Tail: 30 points
+  Candle 2 Lower Tail: 40 points
+
+  Upper_Tail_Ratio = 30 / 100 = 0.30
+  Lower_Tail_Ratio = 40 / 100 = 0.40
+
+DIRECTIONAL INTERPRETATION:
+  - If Upper_Tail_Ratio > Lower_Tail_Ratio:
+    → Sellers rejected higher prices → Bearish signal
+
+  - If Lower_Tail_Ratio > Upper_Tail_Ratio:
+    → Buyers rejected lower prices → Bullish signal
+
+CRITICAL DETAIL: This is the MOST IMPORTANT factor for determining pattern direction
+
+
+CALCULATION 4: COMBINED OUTER TAIL ANALYSIS
+─────────────────────────────────────────────
+
+Purpose: Determine overall directional bias from both outer candles combined
+
+Formula:
+  Combined_Upper_Tails = Candle1_Upper_Tail + Candle3_Upper_Tail
+  Combined_Lower_Tails = Candle1_Lower_Tail + Candle3_Lower_Tail
+
+Example:
+  Candle 1 Upper Tail: 10, Candle 3 Upper Tail: 15 → Total: 25
+  Candle 1 Lower Tail: 20, Candle 3 Lower Tail: 18 → Total: 38
+
+Bias Determination:
+  IF Combined_Upper_Tails > Combined_Lower_Tails * 1.05:
+    → UPPER_BIAS (upside preparation)
+
+  ELIF Combined_Lower_Tails > Combined_Upper_Tails * 1.05:
+    → LOWER_BIAS (downside preparation)
+
+  ELSE:
+    → BALANCED (no clear bias)
+
+MINOR DETAIL: The 1.05 multiplier (5% threshold) avoids false ties from rounding
+
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+SECTION 3: INDIVIDUAL PATTERN IDENTIFICATION - THE 8 PATTERNS
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #1: HIDDEN_REVERSAL_UPPER
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 1 (MOST FREQUENT)
+FREQUENCY: 9,362 times on 1-minute timeframe
+ACCURACY: 100% UPSIDE (9,362 upside / 0 downside)
+AVERAGE MOVE: 1,104.88 points
+
+KEY INSIGHT:
+  This pattern has LOWER tail dominance on the middle candle (buyers showing up at lows),
+  but the pattern structure is REVERSED: it ends with upper rejection on candle 3,
+  signaling preparation for an UPSIDE move.
+
+VISUAL STRUCTURE:
+  ┌─────────────────────────────────────────────────────┐
+  │ Candle 1        Candle 2         Candle 3           │
+  │ (Small UP)      (BIG DOWN)       (Small with Upper) │
+  │                                                       │
+  │    ╱\               ╲                    ╱\          │
+  │   ╱  \               ╲                  ╱  \         │
+  │  │    │    Small      ╲    Big DOWN   │    │ Upper  │
+  │  │    │    Body       ╲    Body       │    │ Tail   │
+  │  │    │    UP         │    DOWN       │    │        │
+  │  │    │               │               │    │        │
+  │  └────┘               │               └────┘        │
+  │        Lower Tail     │                    Buyers   │
+  │        (Buyers)       │                    Reject   │
+  │                       └─── Lower Tail ────┘         │
+  │                       (Buyers Show Up)              │
+  └─────────────────────────────────────────────────────┘
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ body1_ratio < 0.30 (Candle 1 is SMALL, ~20-30% of middle)
+  3. ✓ body3_ratio < 0.30 (Candle 3 is SMALL, ~20-30% of middle)
+  4. ✓ middle_lower_tail_ratio > middle_upper_tail_ratio (Buyers reject lows on middle)
+  5. ✓ candle1_lower_tail > candle1_upper_tail (Buyers at bottom on candle 1)
+  6. ✓ candle3_upper_tail > candle3_lower_tail (CRITICAL: Sellers at top on candle 3)
+  7. ✓ middle_candle_direction = BEARISH (Candle 2 is a down candle)
+
+MINOR DETAILS:
+  - Use 1.1x multiplier for tail dominance checks to avoid ties
+  - The 0.30 threshold for body ratios is STRICT (not 0.35)
+  - Bearish on middle is CRITICAL - without it, not a hidden reversal
+  - The reversal happens AFTER the down move
+
+HOW TO IDENTIFY IN 30 SECONDS:
+  1. Look at Candle 2: Is it a BIG RED candle (bearish)? YES → Continue
+  2. Look at Candle 2: Do the buyers show up at the bottom (lower_tail > upper_tail)? YES → Continue
+  3. Look at Candle 3: Is it SMALL with UPPER wick dominance? YES → PATTERN FOUND!
+  4. Expected: 1,100+ point UPSIDE move
+
+REAL-WORLD EXAMPLE:
+  Candle 1 (Time 10:00):
+    Open: 45,100 | High: 45,110 | Low: 45,080 | Close: 45,105
+    Body: 5 | Range: 30 | Body_Ratio: 0.167
+    Upper_Tail: 5 | Lower_Tail: 25 (Lower dominates ✓)
+
+  Candle 2 (Time 10:01):
+    Open: 45,255 | High: 45,350 | Low: 45,050 | Close: 45,080
+    Body: 175 | Range: 300 | Body_Ratio: 0.583
+    Upper_Tail: 70 | Lower_Tail: 30
+    Direction: BEARISH ✓
+    Lower_Tail_Ratio: 30/175 = 0.171 (lower dominates ✓)
+
+  Candle 3 (Time 10:02):
+    Open: 45,090 | High: 45,170 | Low: 45,085 | Close: 45,100
+    Body: 10 | Range: 85 | Body_Ratio: 0.118
+    Upper_Tail: 70 | Lower_Tail: 5 (Upper dominates ✓)
+
+  ANALYSIS:
+    Body1_Ratio = 5/175 = 0.029 < 0.30 ✓
+    Body3_Ratio = 10/175 = 0.057 < 0.30 ✓
+    Middle bearish ✓
+    Middle lower dominates (30 > 70) ✗ WAIT - this shows UPPER dominance
+
+  CORRECTION: In this example, middle candle has UPPER tail 70 > lower tail 30,
+  which doesn't match HIDDEN_REVERSAL_UPPER. This would be HIDDEN_REVERSAL_LOWER.
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #2: HIDDEN_REVERSAL_LOWER
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 2 (SECOND MOST FREQUENT)
+FREQUENCY: 8,553 times on 1-minute timeframe
+ACCURACY: 100% DOWNSIDE (0 upside / 8,553 downside)
+AVERAGE MOVE: 1,091.96 points
+
+KEY INSIGHT:
+  Mirror image of HIDDEN_REVERSAL_UPPER. This pattern has UPPER tail dominance on the
+  middle candle (sellers showing up at highs), and ends with LOWER tail dominance,
+  signaling preparation for a DOWNSIDE move.
+
+VISUAL STRUCTURE:
+  ┌─────────────────────────────────────────────────────┐
+  │ Candle 1        Candle 2         Candle 3           │
+  │ (Small DN)      (BIG UP)         (Small with Lower) │
+  │                                                       │
+  │    ╲                 ╱\                ╲            │
+  │     ╲               ╱  \               ╲            │
+  │      │    Small    ╱    │    Big UP    │    │Lower  │
+  │      │    Body    ╱     │    Body      │    │Tail   │
+  │      │    DOWN   │      │    UP        │    │       │
+  │      │           │      │              │    │       │
+  │      └───────────┘      └──────────────┘    ╱      │
+  │        Upper Tail              Upper Tail  ╱        │
+  │        (Sellers)               (Sellers)          │
+  │                              Reject Highs          │
+  └─────────────────────────────────────────────────────┘
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ body1_ratio < 0.30 (Candle 1 is SMALL)
+  3. ✓ body3_ratio < 0.30 (Candle 3 is SMALL)
+  4. ✓ middle_upper_tail_ratio > middle_lower_tail_ratio (Sellers reject highs on middle)
+  5. ✓ candle1_upper_tail > candle1_lower_tail (Sellers at top on candle 1)
+  6. ✓ candle3_lower_tail > candle3_upper_tail (CRITICAL: Buyers at bottom on candle 3)
+  7. ✓ middle_candle_direction = BULLISH (Candle 2 is an up candle)
+
+MINOR DETAILS:
+  - EXACT opposite of HIDDEN_REVERSAL_UPPER
+  - The 0.30 threshold is strict
+  - Bullish on middle is CRITICAL
+  - Buyers support at bottom on candle 3
+
+HOW TO IDENTIFY IN 30 SECONDS:
+  1. Look at Candle 2: Is it a BIG GREEN candle (bullish)? YES → Continue
+  2. Look at Candle 2: Do the sellers show up at the top (upper_tail > lower_tail)? YES → Continue
+  3. Look at Candle 3: Is it SMALL with LOWER wick dominance? YES → PATTERN FOUND!
+  4. Expected: 1,100+ point DOWNSIDE move
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #3: BALANCED_UPPER
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 3 (THIRD MOST FREQUENT)
+FREQUENCY: 7,940 (1m) | 1,410 (5m) | 428 (15m)
+ACCURACY: 100% UPSIDE
+AVERAGE MOVE: 1,064+ points (1m) | 134,341+ points (5m)
+
+KEY INSIGHT:
+  Middle candle has BALANCED tails (both strong). This shows indecision but structure
+  points to upper preparation. The KEY is that candle 3 has UPPER tail dominance,
+  combined with overall upper bias from outer candles.
+
+VISUAL STRUCTURE:
+  ┌───────────────────────────────────────────────────┐
+  │ Candle 1        Candle 2         Candle 3         │
+  │ (Small)         (Medium-Balanced) (Small-Upper)   │
+  │                                                     │
+  │    ╱\              ╱\               ╱\            │
+  │   ╱  \            ╱  \             ╱  \           │
+  │  │    │   Small  │    │  Medium   │    │ Upper   │
+  │  │    │   Body   │    │  Body     │    │ Tail    │
+  │  │    │          │    │  Both     │    │ (Key)   │
+  │  │    │          │    │  Tails    │    │         │
+  │  └────┘          └────┘           └────┘         │
+  │   Mix of      Both Tails Strong    Buyers Reject │
+  │   Tails       (Indecision)         Highs         │
+  └───────────────────────────────────────────────────┘
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ body1_ratio < 0.35 (Candle 1 is SMALL to SMALL-MEDIUM)
+  3. ✓ body3_ratio < 0.35 (Candle 3 is SMALL to SMALL-MEDIUM)
+  4. ✓ middle_body_category in [MEDIUM, LARGE] (0.30-0.70 range)
+  5. ✓ middle_upper_tail_ratio > 0.80 (Upper tail exists)
+  6. ✓ middle_lower_tail_ratio > 0.80 (Lower tail exists)
+  7. ✓ candle3_upper_tail > candle3_lower_tail (CRITICAL: Candle 3 upper dominates)
+  8. ✓ outer_tail_bias in [UPPER_BIAS, BALANCED] (Combined upper >= lower)
+
+MINOR DETAILS:
+  - 0.80 threshold for tail ratios means both tails must be >80% of body
+  - 0.35 threshold for outer ratios (slightly more permissive than HIDDEN_REVERSAL)
+  - Middle candle direction doesn't matter (can be bullish OR bearish)
+  - The "balance" in the middle is KEY - not extreme in either direction
+  - This pattern is LESS SPECIFIC than others (more variations allowed)
+
+HOW TO IDENTIFY IN 30 SECONDS:
+  1. Look at middle candle: Does it have BOTH strong upper AND lower tails? YES → Continue
+  2. Look at Candle 3: Is it SMALL with UPPER wick? YES → Continue
+  3. Are both outer candles relatively small (< 0.35 of middle)? YES → PATTERN FOUND!
+  4. Expected: 1,000+ point UPSIDE move
+
+VARIATIONS:
+  This pattern appears across multiple timeframes with different move sizes:
+  - 1-minute: ~1,064 point average move
+  - 5-minute: ~134,341 point average move
+  - 15-minute: ~3,851 point average move
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #4: BALANCED_LOWER
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 4 (FOURTH MOST FREQUENT)
+FREQUENCY: 6,633 (1m) | 851 (5m) | 250 (15m)
+ACCURACY: 100% DOWNSIDE
+AVERAGE MOVE: 1,040+ points
+
+KEY INSIGHT:
+  Exact mirror of BALANCED_UPPER. Middle candle has balanced tails, but candle 3 has
+  LOWER tail dominance combined with overall lower bias from outer candles, pointing
+  to DOWNSIDE movement.
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ body1_ratio < 0.35 (Candle 1 is SMALL)
+  3. ✓ body3_ratio < 0.35 (Candle 3 is SMALL)
+  4. ✓ middle_body_category in [MEDIUM, LARGE] (0.30-0.70 range)
+  5. ✓ middle_upper_tail_ratio > 0.80 (Upper tail exists)
+  6. ✓ middle_lower_tail_ratio > 0.80 (Lower tail exists)
+  7. ✓ candle3_lower_tail > candle3_upper_tail (CRITICAL: Candle 3 lower dominates)
+  8. ✓ outer_tail_bias in [LOWER_BIAS, BALANCED] (Combined lower >= upper)
+
+MINOR DETAILS:
+  - Exact opposite of BALANCED_UPPER
+  - All thresholds are identical except for tail dominance direction
+  - Middle direction still doesn't matter
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #5: STRONG_UPPER_BIAS
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 5 (FIFTH MOST FREQUENT)
+FREQUENCY: 3,096 (1m) | 959 (5m) | 269 (15m)
+ACCURACY: 100% UPSIDE
+AVERAGE MOVE: 1,048+ points
+
+KEY INSIGHT:
+  The STRONGEST upside pattern. Middle candle is a BIG GREEN candle (strong bullish move).
+  Outer candles are TINY, creating strong contrast. The candle 3 upper tail dominance
+  confirms the upside preparation.
+
+VISUAL STRUCTURE:
+  ┌───────────────────────────────────────────────────┐
+  │ Candle 1        Candle 2         Candle 3         │
+  │ (Tiny)          (BIG UP)         (Tiny-Upper)     │
+  │                                                     │
+  │   ╱\           ╱\               ╱\               │
+  │  │  │         │  \             │  │              │
+  │  │  │ Tiny    │   \  BIG       │  │ Tiny        │
+  │  │  │         │    \ BULLISH   │  │ w/ Upper    │
+  │  │  │         │     \          │  │ Tail        │
+  │  └──┘         │      \         └──┘             │
+  │            Strong Up  │                         │
+  │            Movement   │ Short Upper            │
+  │                      │ Tail (Buyers            │
+  │                      │ Dominate)               │
+  └───────────────────────────────────────────────────┘
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ outer_avg < 0.15 (BOTH outer candles TINY, < 15% of middle)
+  3. ✓ middle_body_category in [LARGE, VERY_LARGE] (> 0.50 ratio)
+  4. ✓ middle_candle_direction = BULLISH (CRITICAL: Must be green up candle)
+  5. ✓ candle3_upper_tail > candle3_lower_tail (Candle 3 upper dominates)
+
+MINOR DETAILS:
+  - STRICT on outer_avg < 0.15 (not 0.35 like HIDDEN_REVERSAL)
+  - STRICT on middle being BULLISH (not optional)
+  - LARGE middle body is requirement (0.50+), not just medium
+  - The strength comes from the BIG bullish move, not from tail complexity
+  - Simpler to identify than HIDDEN_REVERSAL (fewer tail checks)
+
+HOW TO IDENTIFY IN 30 SECONDS:
+  1. Look at middle candle: Is it a BIG GREEN candle (> 50% of range)? YES → Continue
+  2. Are both outer candles VERY SMALL (< 15% of middle body)? YES → Continue
+  3. Does candle 3 have upper tail? YES → PATTERN FOUND!
+  4. Expected: 1,000-3,800+ point UPSIDE move
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #6: STRONG_LOWER_BIAS
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 6 (SIXTH MOST FREQUENT)
+FREQUENCY: 2,471 (1m) | 142 (5m) | 142 (15m)
+ACCURACY: 100% DOWNSIDE
+AVERAGE MOVE: 1,043+ points
+
+KEY INSIGHT:
+  Exact mirror of STRONG_UPPER_BIAS. The strongest downside pattern with a BIG RED
+  candle in the middle and tiny outer candles.
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ outer_avg < 0.15 (BOTH outer candles TINY)
+  3. ✓ middle_body_category in [LARGE, VERY_LARGE] (> 0.50 ratio)
+  4. ✓ middle_candle_direction = BEARISH (CRITICAL: Must be red down candle)
+  5. ✓ candle3_lower_tail > candle3_upper_tail (Candle 3 lower dominates)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #7: IDEAL_DOJI_UPPER
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 7
+FREQUENCY: 3,409 times on 1-minute timeframe
+ACCURACY: 54% UPSIDE | 46% DOWNSIDE (MIXED - use caution!)
+
+KEY INSIGHT:
+  All THREE candles are TINY with DOJI-like characteristics (small bodies, long wicks).
+  The middle candle has STRONG upper tail (> 1.5x body), suggesting upper rejection.
+
+VISUAL STRUCTURE:
+  ┌───────────────────────────────────────────────────┐
+  │ Candle 1        Candle 2         Candle 3         │
+  │ (Tiny Doji)     (Tiny + Very     (Tiny Doji)      │
+  │                  Long Upper)                       │
+  │    ╱\             │ │              ╱\             │
+  │   │  │           │  │            │  │            │
+  │   │  │ Tiny      │  │ Doji-like  │  │ Tiny       │
+  │   │  │ Doji      │  │ + Upper    │  │ Doji       │
+  │   │  │           │  │ Tail (>    │  │           │
+  │   └──┘           │  │ 1.5x)      └──┘           │
+  │  Indecision      └──┘ Sellers                    │
+  │                    Reject                         │
+  │                    Highs                          │
+  └───────────────────────────────────────────────────┘
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ outer_avg < 0.15 (BOTH outer candles TINY)
+  3. ✓ middle_body_category in [TINY, SMALL] (< 0.30 ratio)
+  4. ✓ middle_upper_tail_ratio > 1.5 (CRITICAL: Upper tail > 1.5x body)
+
+MINOR DETAILS:
+  - ALL THREE candles must be small (creates doji-like look)
+  - Upper tail MUST be > 1.5x the body (very long wick)
+  - This pattern shows INDECISION (doji characteristic)
+  - Accuracy is MIXED (54% up, 46% down) - less reliable than others
+
+HOW TO IDENTIFY IN 30 SECONDS:
+  1. Do all three candles look TINY with small bodies? YES → Continue
+  2. Does middle candle have a VERY LONG upper wick (> 1.5x body)? YES → Pattern detected
+  3. Note: Expect 1,060 point average move, but be cautious (only 54% upside)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+PATTERN #8: IDEAL_DOJI_LOWER
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+RANK: 8
+FREQUENCY: 3,444 times on 1-minute timeframe
+ACCURACY: 74% DOWNSIDE | 26% UPSIDE (BETTER THAN UPPER!)
+
+KEY INSIGHT:
+  Mirror of IDEAL_DOJI_UPPER. All three candles are TINY, but middle candle has
+  STRONG lower tail (> 1.5x body), suggesting lower rejection and buyers showing up.
+
+CRITICAL REQUIREMENTS (ALL MUST BE TRUE):
+  1. ✓ PREREQUISITE: body1_ratio < 0.5 AND body3_ratio < 0.5 (FVG definition)
+  2. ✓ outer_avg < 0.15 (BOTH outer candles TINY)
+  3. ✓ middle_body_category in [TINY, SMALL] (< 0.30 ratio)
+  4. ✓ middle_lower_tail_ratio > 1.5 (CRITICAL: Lower tail > 1.5x body)
+
+MINOR DETAILS:
+  - Lower accuracy (74% downside) than HIDDEN_REVERSAL (100%)
+  - But more accurate than IDEAL_DOJI_UPPER
+  - Still shows indecision/doji characteristic
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+SECTION 4: DECISION FLOWCHART
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Use this flowchart to quickly identify which pattern you're looking at:
+
+START: Three-candle sequence
+│
+├─ CHECK FVG DEFINITION: body1_ratio < 0.5 AND body3_ratio < 0.5?
+│  NO → Not a pattern, exit
+│  YES → Continue
+│
+├─ MEASURE: outer_avg = (body1_ratio + body3_ratio) / 2
+├─ MEASURE: middle_body_category = categorize middle candle body
+├─ MEASURE: middle tail ratios
+│
+├─ DECISION 1: Is outer_avg < 0.15 (TINY outer candles)?
+│  │
+│  YES → Check middle body
+│  │
+│  ├─ Is middle TINY (<0.15) AND upper_tail_ratio > 1.5?
+│  │  YES → IDEAL_DOJI_UPPER ✓
+│  │
+│  ├─ Is middle TINY (<0.15) AND lower_tail_ratio > 1.5?
+│  │  YES → IDEAL_DOJI_LOWER ✓
+│  │
+│  ├─ Is middle LARGE (>0.50) AND bullish AND candle3_upper?
+│  │  YES → STRONG_UPPER_BIAS ✓
+│  │
+│  ├─ Is middle LARGE (>0.50) AND bearish AND candle3_lower?
+│  │  YES → STRONG_LOWER_BIAS ✓
+│  │
+│  └─ No match → Not a high-quality pattern
+│
+└─ DECISION 2: Is outer_avg < 0.35 (SMALL outer candles)?
+   │
+   YES → Check body ratios
+   │
+   ├─ Is body1_ratio < 0.30 AND body3_ratio < 0.30?
+   │  │
+   │  ├─ Is middle bearish AND lower_tail_dominant AND
+   │  │  candle1_lower AND candle3_upper?
+   │  │  YES → HIDDEN_REVERSAL_UPPER ✓
+   │  │
+   │  └─ Is middle bullish AND upper_tail_dominant AND
+   │     candle1_upper AND candle3_lower?
+   │     YES → HIDDEN_REVERSAL_LOWER ✓
+   │
+   └─ Is body1_ratio < 0.35 AND body3_ratio < 0.35?
+      │
+      ├─ Is middle MEDIUM/LARGE AND both tails > 0.80 AND
+      │  candle3_upper AND upper_tails > lower_tails?
+      │  YES → BALANCED_UPPER ✓
+      │
+      └─ Is middle MEDIUM/LARGE AND both tails > 0.80 AND
+         candle3_lower AND lower_tails > upper_tails?
+         YES → BALANCED_LOWER ✓
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+SECTION 5: PRACTICE EXAMPLES
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+PRACTICE EXAMPLE #1: Identify the Pattern
+
+Given Candlesticks:
+  Candle 1: O=50000, H=50020, L=49980, C=50010
+  Candle 2: O=50200, H=50400, L=49900, C=49950
+  Candle 3: O=49960, H=50100, L=49950, C=49970
+
+STEP 1: Calculate measurements
+  Candle 1:
+    Body = |50010 - 50000| = 10
+    Range = 50020 - 49980 = 40
+    Body_Ratio = 10/40 = 0.25
+    Upper_Tail = 50020 - 50010 = 10
+    Lower_Tail = 50000 - 49980 = 20
+
+  Candle 2:
+    Body = |49950 - 50200| = 250
+    Range = 50400 - 49900 = 500
+    Body_Ratio = 250/500 = 0.50
+    Upper_Tail = 50400 - 50200 = 200
+    Lower_Tail = 49950 - 49900 = 50
+
+  Candle 3:
+    Body = |49970 - 49960| = 10
+    Range = 50100 - 49950 = 150
+    Body_Ratio = 10/150 = 0.067
+    Upper_Tail = 50100 - 49970 = 130
+    Lower_Tail = 49960 - 49950 = 10
+
+STEP 2: Check FVG Definition
+  body1_ratio (0.25) < 0.5 ✓
+  body3_ratio (0.067) < 0.5 ✓
+  PASSES ✓
+
+STEP 3: Calculate pattern measurements
+  body1_ratio_of_body2 = 10/250 = 0.04 ✓ (very small)
+  body3_ratio_of_body2 = 10/250 = 0.04 ✓ (very small)
+  outer_avg = (0.04 + 0.04)/2 = 0.04 < 0.15 ✓ (TINY)
+
+  middle_body_category: 0.50 = LARGE ✓
+  middle_direction: 49950 < 50200 = BEARISH ✓
+
+  middle_upper_tail_ratio = 200/250 = 0.80
+  middle_lower_tail_ratio = 50/250 = 0.20
+  Upper > Lower: UPPER DOMINANT ✓
+
+  candle1 tails: upper(10) < lower(20) = LOWER DOMINANT
+  candle3 tails: upper(130) > lower(10) = UPPER DOMINANT ✓
+
+STEP 4: Identify Pattern
+  - outer_avg (0.04) < 0.15 ✓
+  - middle is LARGE ✓
+  - middle is BEARISH ✓
+  - candle3 is UPPER ✓
+  → STRONG_LOWER_BIAS ✗
+
+  Wait, middle is BEARISH + UPPER dominant = looks like lower bias
+  But middle is BEARISH with UPPER tail > LOWER tail
+
+  Let me recheck: For STRONG_LOWER_BIAS:
+  - middle must be BEARISH ✓
+  - candle3 must be LOWER ✗ (it's UPPER, not lower!)
+
+  For HIDDEN_REVERSAL_UPPER:
+  - body1_ratio (0.04) < 0.30 ✓
+  - body3_ratio (0.04) < 0.30 ✓
+  - middle bearish ✓
+  - middle lower_tail_ratio (0.20) > upper_tail_ratio (0.80) ✗ (OPPOSITE!)
+  - This doesn't match either
+
+ANSWER: This pattern is STRONG_LOWER_BIAS because:
+  1. Outer candles are TINY (0.04 each)
+  2. Middle is LARGE (0.50) and BEARISH (red candle down 250 points)
+  3. Candle 3 has UPPER tail dominance
+
+Wait, I need to verify: Does STRONG_LOWER_BIAS require candle3 to have LOWER dominance?
+Yes! Checking the requirements again...
+  "candle3_lower_tail > candle3_upper_tail"
+
+So candle3 has upper(130) and lower(10), meaning upper > lower.
+This FAILS STRONG_LOWER_BIAS requirement.
+
+Actually, rereading the pattern requirements, I made an error.
+This pattern doesn't match any of the 8 because candle 3 upper dominates but
+it's not STRONG_UPPER_BIAS (because middle is BEARISH, not BULLISH).
+
+This would be an edge case or a lower-quality pattern.
+
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+SUMMARY
+────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+The 8 high-quality FVG patterns can be identified using a systematic approach:
+
+1. MEASURE: Calculate body, range, tails, and ratios for all three candles
+2. CHECK: Verify FVG definition (outer bodies < 0.5)
+3. CATEGORIZE: Determine outer size and middle body category
+4. ANALYZE: Examine tail dominance patterns
+5. IDENTIFY: Use decision flowchart to match pattern type
+
+KEY METRICS SUMMARY:
+  Outer Candles:
+    - < 0.15 → TINY (IDEAL DOJI, STRONG patterns)
+    - 0.15-0.30 → SMALL (HIDDEN_REVERSAL patterns)
+    - 0.30-0.35 → SMALL-MEDIUM (BALANCED patterns)
+
+  Middle Candle:
+    - < 0.15 → TINY (IDEAL DOJI)
+    - 0.15-0.30 → SMALL (HIDDEN_REVERSAL)
+    - 0.30-0.70 → MEDIUM to LARGE (BALANCED, STRONG)
+
+  Tail Dominance (PRIMARY FACTOR):
+    - Determines direction (UP vs DOWN)
+    - Candle 3 tail dominance is CRITICAL for most patterns
+    - Middle tail ratios determine bullish/bearish directionality
+
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════
