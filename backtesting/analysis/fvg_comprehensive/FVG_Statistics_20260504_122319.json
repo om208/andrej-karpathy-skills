@@ -1,0 +1,6 @@
+{
+  "30m": {
+    "interval": "30m",
+    "analysis_date": "2026-05-04T12:23:18.900514",
+    "total_fvgs_detected": 2251,
+    "fvgs_with_upside_move": 
