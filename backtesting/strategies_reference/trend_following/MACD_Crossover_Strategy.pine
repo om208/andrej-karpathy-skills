@@ -1,0 +1,52 @@
+//@version=5
+strategy("MACD Crossover Strategy", shorttitle="MACD-CROSS", overlay=false, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+fast_length = input.int(12, title="Fast EMA", minval=5, maxval=50)
+slow_length = input.int(26, title="Slow EMA", minval=20, maxval=100)
+signal_length = input.int(9, title="Signal Length", minval=3, maxval=30)
+tp_pips = input.float(150, title="Take Profit (pips)", minval=50, maxval=500)
+sl_pips = input.float(80, title="Stop Loss (pips)", minval=20, maxval=200)
+
+macd = ta.macd(close, fast_length, slow_length, signal_length)
+macd_line = macd[0]
+signal_line = macd[1]
+histogram = macd[2]
+
+bullish_cross = macd_line > signal_line and macd_line[1] <= signal_line[1]
+bearish_cross = macd_line < signal_line and macd_line[1] >= signal_line[1]
+
+var bool in_trade = false
+var string trade_type = ""
+var float ent = 0.0
+
+if bullish_cross and not in_trade
+    in_trade := true
+    trade_type := "LONG"
+    ent := close
+    strategy.entry("MACD Long", strategy.long)
+
+if bearish_cross and not in_trade
+    in_trade := true
+    trade_type := "SHORT"
+    ent := close
+    strategy.entry("MACD Short", strategy.short)
+
+if in_trade
+    if trade_type == "LONG"
+        if high >= ent + (tp_pips / 10000) or low <= ent - (sl_pips / 10000)
+            in_trade := false
+            strategy.close("MACD Long")
+    else
+        if low <= ent - (tp_pips / 10000) or high >= ent + (sl_pips / 10000)
+            in_trade := false
+            strategy.close("MACD Short")
+
+plot(macd_line, title="MACD", color=color.blue, linewidth=2)
+plot(signal_line, title="Signal", color=color.red, linewidth=2)
+plot(histogram, title="Histogram", color=color.gray, style=plot.style_columns)
+hline(0, linestyle=hline.style_dashed, color=color.gray)
+
+if bullish_cross
+    alert(str.format("🟢 MACD BULLISH | Line: {0,number,0.00000} | Signal: {1,number,0.00000}", macd_line, signal_line), freq=alert.freq_once_per_bar_close)
+if bearish_cross
+    alert(str.format("🔴 MACD BEARISH | Line: {0,number,0.00000} | Signal: {1,number,0.00000}", macd_line, signal_line), freq=alert.freq_once_per_bar_close)

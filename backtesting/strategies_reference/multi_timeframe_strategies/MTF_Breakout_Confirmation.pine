@@ -1,0 +1,56 @@
+//@version=5
+strategy("MTF Breakout Confirmation", shorttitle="MTF-BREAK", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+lookback_current = input.int(20, title="Current TF Lookback", minval=5, maxval=50)
+lookback_mtf = input.int(50, title="MTF Lookback", minval=10, maxval=100)
+mtf_timeframe = input.timeframe("240", title="MTF Period")
+tp_pips = input.float(150, title="Take Profit (pips)", minval=20, maxval=400)
+sl_pips = input.float(80, title="Stop Loss (pips)", minval=20, maxval=200)
+
+current_high = ta.highest(high, lookback_current)
+current_low = ta.lowest(low, lookback_current)
+mtf_high = request.security(syminfo.tickerid, mtf_timeframe, ta.highest(high, lookback_mtf))
+mtf_low = request.security(syminfo.tickerid, mtf_timeframe, ta.lowest(low, lookback_mtf))
+
+breakout_up = close > current_high and close > mtf_high
+breakout_down = close < current_low and close < mtf_low
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if breakout_up and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("Breakout Long", strategy.long)
+
+if breakout_down and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("Breakout Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Breakout Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Breakout Short")
+
+plot(current_high, title="Current High", color=color.red, linewidth=2)
+plot(current_low, title="Current Low", color=color.green, linewidth=2)
+plot(mtf_high, title="MTF High", color=color.new(color.red, 50), linewidth=1, style=plot.style_dashed)
+plot(mtf_low, title="MTF Low", color=color.new(color.green, 50), linewidth=1, style=plot.style_dashed)
+
+if breakout_up or breakout_down
+    plotshape(series=breakout_up, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=breakout_down, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if breakout_up
+    alert(str.format("🟢 MTF BREAKOUT UP | Price: {0,number,0.00000} | Resistance: {1,number,0.00000}", close, current_high), freq=alert.freq_once_per_bar_close)
+if breakout_down
+    alert(str.format("🔴 MTF BREAKOUT DOWN | Price: {0,number,0.00000} | Support: {1,number,0.00000}", close, current_low), freq=alert.freq_once_per_bar_close)

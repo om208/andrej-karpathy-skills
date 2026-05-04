@@ -1,0 +1,60 @@
+//@version=5
+strategy("Triple EMA Crossover", shorttitle="3EMA", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+ema_fast = input.int(9, title="Fast EMA", minval=3, maxval=50)
+ema_mid = input.int(21, title="Mid EMA", minval=10, maxval=100)
+ema_slow = input.int(55, title="Slow EMA", minval=20, maxval=200)
+tp_pips = input.float(150, title="Take Profit (pips)", minval=50, maxval=400)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+ema9 = ta.ema(close, ema_fast)
+ema21 = ta.ema(close, ema_mid)
+ema55 = ta.ema(close, ema_slow)
+
+bullish_align = ema9 > ema21 and ema21 > ema55
+bearish_align = ema9 < ema21 and ema21 < ema55
+fast_cross_mid = ema9 > ema21 and ema9[1] <= ema21[1]
+fast_cross_slow = ema9 > ema55 and ema9[1] <= ema55[1]
+short_cross_mid = ema9 < ema21 and ema9[1] >= ema21[1]
+
+entry_long = bullish_align and (fast_cross_mid or fast_cross_slow)
+entry_short = bearish_align and short_cross_mid
+
+var bool in_pos = false
+var string dir = ""
+var float ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    dir := "LONG"
+    ent := close
+    strategy.entry("3EMA Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    dir := "SHORT"
+    ent := close
+    strategy.entry("3EMA Short", strategy.short)
+
+if in_pos
+    if dir == "LONG"
+        if high >= ent + (tp_pips / 10000) or low <= ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("3EMA Long")
+    else
+        if low <= ent - (tp_pips / 10000) or high >= ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("3EMA Short")
+
+plot(ema9, title="EMA 9", color=color.blue, linewidth=2)
+plot(ema21, title="EMA 21", color=color.orange, linewidth=2)
+plot(ema55, title="EMA 55", color=color.red, linewidth=2)
+
+if entry_long or entry_short
+    plotshape(series=entry_long, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=entry_short, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if entry_long
+    alert(str.format("🟢 3EMA LONG | Price: {0,number,0.00000}", close), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 3EMA SHORT | Price: {0,number,0.00000}", close), freq=alert.freq_once_per_bar_close)

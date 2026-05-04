@@ -1,0 +1,49 @@
+//@version=5
+strategy("Parabolic SAR Strategy", shorttitle="SAR", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+iaf = input.float(0.02, title="Initial AF", minval=0.01, maxval=0.1)
+maxaf = input.float(0.2, title="Max AF", minval=0.1, maxval=0.5)
+tp_pips = input.float(120, title="Take Profit (pips)", minval=50, maxval=300)
+
+sar = ta.sar(iaf, maxaf)
+
+entry_long = sar[1] > sar and low <= sar
+entry_short = sar[1] < sar and high >= sar
+
+var bool in_pos = false
+var string pos_dir = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_dir := "LONG"
+    pos_ent := close
+    strategy.entry("SAR Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_dir := "SHORT"
+    pos_ent := close
+    strategy.entry("SAR Short", strategy.short)
+
+if in_pos
+    if pos_dir == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= sar
+            in_pos := false
+            strategy.close("SAR Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= sar
+            in_pos := false
+            strategy.close("SAR Short")
+
+plot(sar, title="SAR", color=pos_dir == "LONG" ? color.green : color.red, linewidth=2, style=plot.style_circles)
+
+if entry_long
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green)
+if entry_short
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if entry_long
+    alert(str.format("🟢 SAR LONG | Entry: {0,number,0.00000} | SAR: {1,number,0.00000}", close, sar), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 SAR SHORT | Entry: {0,number,0.00000} | SAR: {1,number,0.00000}", close, sar), freq=alert.freq_once_per_bar_close)

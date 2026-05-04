@@ -1,0 +1,64 @@
+//@version=5
+strategy("Multi-Timeframe MACD Confirmation", shorttitle="MTF-MACD", overlay=false, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+fast_len = input.int(12, title="Fast EMA", minval=5, maxval=50)
+slow_len = input.int(26, title="Slow EMA", minval=20, maxval=100)
+signal_len = input.int(9, title="Signal Length", minval=3, maxval=30)
+mtf_timeframe = input.timeframe("60", title="MTF Period")
+tp_pips = input.float(130, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+current_macd = ta.macd(close, fast_len, slow_len, signal_len)
+current_line = current_macd[0]
+current_signal = current_macd[1]
+
+mtf_macd = request.security(syminfo.tickerid, mtf_timeframe, ta.macd(close, fast_len, slow_len, signal_len))
+mtf_line = mtf_macd[0]
+mtf_signal = mtf_macd[1]
+
+current_bullish = current_line > current_signal
+current_bearish = current_line < current_signal
+mtf_bullish = mtf_line > mtf_signal
+mtf_bearish = mtf_line < mtf_signal
+current_cross_up = current_line > current_signal and current_line[1] <= current_signal[1]
+current_cross_down = current_line < current_signal and current_line[1] >= current_signal[1]
+
+entry_long = current_cross_up and mtf_bullish
+entry_short = current_cross_down and mtf_bearish
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("MTF MACD Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("MTF MACD Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("MTF MACD Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("MTF MACD Short")
+
+plot(current_line, title="Current MACD", color=color.blue, linewidth=2)
+plot(current_signal, title="Current Signal", color=color.red, linewidth=2)
+plot(mtf_line, title="MTF MACD", color=color.new(color.blue, 50), linewidth=1, style=plot.style_dashed)
+plot(mtf_signal, title="MTF Signal", color=color.new(color.red, 50), linewidth=1, style=plot.style_dashed)
+hline(0, linestyle=hline.style_dashed, color=color.gray)
+
+if entry_long
+    alert(str.format("🟢 MTF MACD LONG | Current: {0,number,0.00000} | MTF: {1,number,0.00000}", current_line, mtf_line), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 MTF MACD SHORT | Current: {0,number,0.00000} | MTF: {1,number,0.00000}", current_line, mtf_line), freq=alert.freq_once_per_bar_close)

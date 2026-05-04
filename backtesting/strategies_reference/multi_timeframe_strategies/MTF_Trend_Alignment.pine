@@ -1,0 +1,61 @@
+//@version=5
+strategy("MTF Trend Alignment", shorttitle="MTF-ALIGN", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+fast_ma = input.int(20, title="Fast MA", minval=5, maxval=50)
+slow_ma = input.int(50, title="Slow MA", minval=50, maxval=200)
+mtf_timeframe = input.timeframe("240", title="Higher TF Period")
+tp_pips = input.float(140, title="Take Profit (pips)", minval=20, maxval=400)
+sl_pips = input.float(75, title="Stop Loss (pips)", minval=20, maxval=150)
+
+current_fast = ta.sma(close, fast_ma)
+current_slow = ta.sma(close, slow_ma)
+mtf_fast = request.security(syminfo.tickerid, mtf_timeframe, ta.sma(close, fast_ma))
+mtf_slow = request.security(syminfo.tickerid, mtf_timeframe, ta.sma(close, slow_ma))
+
+current_bullish = current_fast > current_slow
+current_bearish = current_fast < current_slow
+mtf_bullish = mtf_fast > mtf_slow
+mtf_bearish = mtf_fast < mtf_slow
+
+alignment_long = current_bullish and mtf_bullish and close > current_fast
+alignment_short = current_bearish and mtf_bearish and close < current_fast
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if alignment_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("Align Long", strategy.long)
+
+if alignment_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("Align Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Align Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Align Short")
+
+plot(current_fast, title="Current Fast", color=color.blue, linewidth=2)
+plot(current_slow, title="Current Slow", color=color.orange, linewidth=2)
+plot(mtf_fast, title="MTF Fast", color=color.new(color.blue, 50), linewidth=1, style=plot.style_dashed)
+plot(mtf_slow, title="MTF Slow", color=color.new(color.orange, 50), linewidth=1, style=plot.style_dashed)
+
+if alignment_long or alignment_short
+    plotshape(series=alignment_long, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=alignment_short, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if alignment_long
+    alert(str.format("🟢 TREND ALIGNMENT LONG | Price: {0,number,0.00000}", close), freq=alert.freq_once_per_bar_close)
+if alignment_short
+    alert(str.format("🔴 TREND ALIGNMENT SHORT | Price: {0,number,0.00000}", close), freq=alert.freq_once_per_bar_close)

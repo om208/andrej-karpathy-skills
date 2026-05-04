@@ -1,0 +1,55 @@
+//@version=5
+strategy("Liquidity Sweep Strategy", shorttitle="LIQ-SWEEP", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+lookback = input.int(20, title="Lookback Period", minval=5, maxval=50)
+sweep_percent = input.float(1.5, title="Sweep Threshold (%)", minval=0.5, maxval=3.0)
+tp_pips = input.float(100, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(60, title="Stop Loss (pips)", minval=20, maxval=150)
+
+recent_high = ta.highest(high, lookback)
+recent_low = ta.lowest(low, lookback)
+high_threshold = recent_high * (1 - (sweep_percent / 100))
+low_threshold = recent_low * (1 + (sweep_percent / 100))
+
+sweep_up = (low < recent_low) and (close > low_threshold)
+sweep_down = (high > recent_high) and (close < high_threshold)
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if sweep_up and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("Sweep Long", strategy.long)
+
+if sweep_down and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("Sweep Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Sweep Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Sweep Short")
+
+plot(recent_high, title="Resistance", color=color.red, linewidth=1, style=plot.style_dashed)
+plot(recent_low, title="Support", color=color.green, linewidth=1, style=plot.style_dashed)
+plot(high_threshold, title="Sweep Trigger Up", color=color.new(color.green, 50), linewidth=1)
+plot(low_threshold, title="Sweep Trigger Down", color=color.new(color.red, 50), linewidth=1)
+
+if sweep_up or sweep_down
+    plotshape(series=sweep_up, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=sweep_down, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if sweep_up
+    alert(str.format("🟢 LIQUIDITY SWEEP UP | Price: {0,number,0.00000}", close), freq=alert.freq_once_per_bar_close)
+if sweep_down
+    alert(str.format("🔴 LIQUIDITY SWEEP DOWN | Price: {0,number,0.00000}", close), freq=alert.freq_once_per_bar_close)

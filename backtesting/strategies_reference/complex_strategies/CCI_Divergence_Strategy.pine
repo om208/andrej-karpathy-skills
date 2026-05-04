@@ -1,0 +1,56 @@
+//@version=5
+strategy("CCI Divergence Strategy", shorttitle="CCI-DIV", overlay=false, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+cci_period = input.int(20, title="CCI Period", minval=5, maxval=50)
+cci_threshold = input.float(100, title="CCI Threshold", minval=50, maxval=200)
+lookback = input.int(10, title="Lookback Period", minval=5, maxval=30)
+tp_pips = input.float(100, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+cci = ta.cci(close, cci_period)
+price_high = ta.highest(high, lookback)
+price_low = ta.lowest(low, lookback)
+cci_high = ta.highest(cci, lookback)
+cci_low = ta.lowest(cci, lookback)
+
+bullish_div = (low < price_low[1]) and (cci > cci_low[1]) and (cci > -cci_threshold)
+bearish_div = (high > price_high[1]) and (cci < cci_high[1]) and (cci < cci_threshold)
+
+entry_long = bullish_div and cci > -cci_threshold
+entry_short = bearish_div and cci < cci_threshold
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("CCI Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("CCI Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("CCI Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("CCI Short")
+
+plot(cci, title="CCI", color=color.blue, linewidth=2)
+hline(cci_threshold, title="Upper Threshold", color=color.red, linestyle=hline.style_dashed)
+hline(-cci_threshold, title="Lower Threshold", color=color.green, linestyle=hline.style_dashed)
+hline(0, title="Middle", color=color.gray, linestyle=hline.style_dotted)
+
+if entry_long
+    alert(str.format("🟢 CCI BULLISH DIVERGENCE | CCI: {0,number,0.0} | Price: {1,number,0.00000}", cci, close), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 CCI BEARISH DIVERGENCE | CCI: {0,number,0.0} | Price: {1,number,0.00000}", cci, close), freq=alert.freq_once_per_bar_close)

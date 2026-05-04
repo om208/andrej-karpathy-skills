@@ -1,0 +1,54 @@
+//@version=5
+strategy("Williams Fractals Strategy", shorttitle="FRAC", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+fractal_lookback = input.int(2, title="Fractal Lookback", minval=1, maxval=5)
+tp_pips = input.float(100, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+confirm_trend = input.bool(true, title="Confirm with Trend")
+
+up_fractal = high > high[fractal_lookback] and high > high[fractal_lookback + 1]
+dn_fractal = low < low[fractal_lookback] and low < low[fractal_lookback + 1]
+
+trend_up = close > ta.sma(close, 50)
+trend_dn = close < ta.sma(close, 50)
+
+entry_long = dn_fractal and (trend_up or not confirm_trend)
+entry_short = up_fractal and (trend_dn or not confirm_trend)
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("Frac Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("Frac Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Frac Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Frac Short")
+
+plot(ta.sma(close, 50), title="MA50", color=color.blue, linewidth=2)
+
+if entry_long
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, size=size.normal)
+if entry_short
+    plotshape(series=true, style=shape.diamond, location=location.abovebar, color=color.red, size=size.normal)
+
+if entry_long
+    alert(str.format("🟢 FRACTAL LONG | Price: {0,number,0.00000} | Low: {1,number,0.00000}", close, low), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 FRACTAL SHORT | Price: {0,number,0.00000} | High: {1,number,0.00000}", close, high), freq=alert.freq_once_per_bar_close)

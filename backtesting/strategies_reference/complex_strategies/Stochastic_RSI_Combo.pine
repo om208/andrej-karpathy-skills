@@ -1,0 +1,61 @@
+//@version=5
+strategy("Stochastic RSI Combo", shorttitle="STOCH-RSI", overlay=false, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+rsi_length = input.int(14, title="RSI Length", minval=5, maxval=50)
+stoch_length = input.int(14, title="Stoch Length", minval=5, maxval=50)
+k_smooth = input.int(3, title="K Smooth", minval=1, maxval=10)
+d_smooth = input.int(3, title="D Smooth", minval=1, maxval=10)
+tp_pips = input.float(110, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+rsi = ta.rsi(close, rsi_length)
+stoch_rsi = ta.stoch(rsi, stoch_length, k_smooth, d_smooth)
+stoch_k = stoch_rsi
+stoch_d = ta.sma(stoch_rsi, d_smooth)
+
+oversold = stoch_k < 20
+overbought = stoch_k > 80
+k_above_d = stoch_k > stoch_d
+k_below_d = stoch_k < stoch_d
+k_cross_up = stoch_k > stoch_d and stoch_k[1] <= stoch_d[1]
+k_cross_down = stoch_k < stoch_d and stoch_k[1] >= stoch_d[1]
+
+entry_long = oversold and k_cross_up
+entry_short = overbought and k_cross_down
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("Stoch Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("Stoch Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Stoch Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("Stoch Short")
+
+plot(stoch_k, title="Stoch %K", color=color.blue, linewidth=2)
+plot(stoch_d, title="Stoch %D", color=color.red, linewidth=2)
+hline(80, title="Overbought", color=color.red, linestyle=hline.style_dashed)
+hline(20, title="Oversold", color=color.green, linestyle=hline.style_dashed)
+hline(50, title="Middle", color=color.gray, linestyle=hline.style_dotted)
+
+if entry_long
+    alert(str.format("🟢 STOCH RSI LONG | K: {0,number,0.0} | D: {1,number,0.0}", stoch_k, stoch_d), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 STOCH RSI SHORT | K: {0,number,0.0} | D: {1,number,0.0}", stoch_k, stoch_d), freq=alert.freq_once_per_bar_close)

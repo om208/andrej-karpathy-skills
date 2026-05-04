@@ -1,0 +1,62 @@
+//@version=5
+strategy("ATR Volatility Breakout", shorttitle="ATR-VOL", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+atr_period = input.int(14, title="ATR Period", minval=5, maxval=50)
+atr_multi = input.float(1.5, title="ATR Multiplier", minval=0.5, maxval=3.0)
+lookback = input.int(20, title="Lookback Period", minval=5, maxval=50)
+tp_pips = input.float(120, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+atr = ta.atr(atr_period)
+recent_high = ta.highest(high, lookback)
+recent_low = ta.lowest(low, lookback)
+
+upper_band = recent_high + (atr * atr_multi)
+lower_band = recent_low - (atr * atr_multi)
+
+breakout_up = close > upper_band and close[1] <= upper_band[1]
+breakout_down = close < lower_band and close[1] >= lower_band[1]
+vol_surge = atr > ta.sma(atr, 20)
+
+entry_long = breakout_up and vol_surge
+entry_short = breakout_down and vol_surge
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("ATR Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("ATR Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("ATR Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("ATR Short")
+
+plot(upper_band, title="Upper Band", color=color.red, linewidth=2)
+plot(lower_band, title="Lower Band", color=color.green, linewidth=2)
+plot(recent_high, title="Recent High", color=color.new(color.red, 50), linewidth=1, style=plot.style_dashed)
+plot(recent_low, title="Recent Low", color=color.new(color.green, 50), linewidth=1, style=plot.style_dashed)
+
+if entry_long or entry_short
+    plotshape(series=entry_long, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=entry_short, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if entry_long
+    alert(str.format("🟢 ATR BREAKOUT UP | Price: {0,number,0.00000} | ATR: {1,number,0.00000}", close, atr), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 ATR BREAKOUT DOWN | Price: {0,number,0.00000} | ATR: {1,number,0.00000}", close, atr), freq=alert.freq_once_per_bar_close)

@@ -1,0 +1,65 @@
+//@version=5
+strategy("Internal Bar Strength (IBS)", shorttitle="IBS", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+ibs_threshold = input.float(0.25, title="IBS Threshold", minval=0.1, maxval=0.5)
+range_filter = input.int(20, title="Range Filter Period", minval=5, maxval=50)
+tp_pips = input.float(100, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+daily_high = request.security(syminfo.tickerid, "D", high)
+daily_low = request.security(syminfo.tickerid, "D", low)
+daily_close = request.security(syminfo.tickerid, "D", close)
+daily_open = request.security(syminfo.tickerid, "D", open)
+
+daily_range = daily_high - daily_low
+daily_body = math.abs(daily_close - daily_open)
+ibs_ratio = daily_range > 0 ? daily_body / daily_range : 0
+
+avg_range = ta.sma(daily_range, range_filter)
+narrow_range = daily_range < avg_range
+
+high_ibs = ibs_ratio < ibs_threshold and narrow_range
+in_upper = close > daily_open
+in_lower = close < daily_open
+
+entry_long = high_ibs and in_upper and close > daily_close
+entry_short = high_ibs and in_lower and close < daily_close
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("IBS Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("IBS Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("IBS Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("IBS Short")
+
+plot(daily_high, title="Daily High", color=color.red, linewidth=1, style=plot.style_dashed)
+plot(daily_low, title="Daily Low", color=color.green, linewidth=1, style=plot.style_dashed)
+plot(daily_open, title="Daily Open", color=color.blue, linewidth=1, style=plot.style_dashed)
+
+if entry_long or entry_short
+    plotshape(series=entry_long, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=entry_short, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if entry_long
+    alert(str.format("🟢 IBS LONG | IBS: {0,number,0.00} | Close: {1,number,0.00000}", ibs_ratio, close), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 IBS SHORT | IBS: {0,number,0.00} | Close: {1,number,0.00000}", ibs_ratio, close), freq=alert.freq_once_per_bar_close)

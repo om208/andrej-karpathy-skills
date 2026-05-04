@@ -1,0 +1,59 @@
+//@version=5
+strategy("Z-Score Mean Reversion", shorttitle="ZSCORE-MR", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+period = input.int(20, title="Period", minval=5, maxval=50)
+zscore_threshold = input.float(2.0, title="Z-Score Threshold", minval=0.5, maxval=3.0)
+tp_pips = input.float(100, title="Take Profit (pips)", minval=20, maxval=300)
+sl_pips = input.float(70, title="Stop Loss (pips)", minval=20, maxval=150)
+
+ma = ta.sma(close, period)
+stddev = ta.stdev(close, period)
+zscore = stddev > 0 ? (close - ma) / stddev : 0
+
+extreme_low = zscore < -zscore_threshold
+extreme_high = zscore > zscore_threshold
+momentum = close > close[5]
+
+entry_long = extreme_low and momentum
+entry_short = extreme_high and not momentum
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("ZScore Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("ZScore Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("ZScore Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("ZScore Short")
+
+plot(ma, title="SMA", color=color.blue, linewidth=2)
+upper_band = ma + (zscore_threshold * stddev)
+lower_band = ma - (zscore_threshold * stddev)
+plot(upper_band, title="Upper Band", color=color.red, linewidth=1, style=plot.style_dashed)
+plot(lower_band, title="Lower Band", color=color.green, linewidth=1, style=plot.style_dashed)
+
+if entry_long or entry_short
+    plotshape(series=entry_long, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=entry_short, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if entry_long
+    alert(str.format("🟢 Z-SCORE LONG | ZScore: {0,number,0.00} | Price: {1,number,0.00000}", zscore, close), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 Z-SCORE SHORT | ZScore: {0,number,0.00} | Price: {1,number,0.00000}", zscore, close), freq=alert.freq_once_per_bar_close)

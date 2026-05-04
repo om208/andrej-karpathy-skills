@@ -1,0 +1,58 @@
+//@version=5
+strategy("VWAP Momentum Strategy", shorttitle="VWAP-MOM", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+vwap_src = input.string("close", title="VWAP Source", options=["open", "high", "low", "close", "hl2"])
+momentum_period = input.int(10, title="Momentum Period", minval=3, maxval=30)
+tp_pips = input.float(130, title="Take Profit (pips)", minval=20, maxval=400)
+sl_pips = input.float(75, title="Stop Loss (pips)", minval=20, maxval=150)
+
+src = vwap_src == "open" ? open : vwap_src == "high" ? high : vwap_src == "low" ? low : vwap_src == "hl2" ? hl2 : close
+vwap = ta.vwap(src)
+
+momentum = close - close[momentum_period]
+positive_momentum = momentum > 0
+negative_momentum = momentum < 0
+
+above_vwap = close > vwap
+below_vwap = close < vwap
+
+entry_long = above_vwap and positive_momentum and close > open
+entry_short = below_vwap and negative_momentum and close < open
+
+var bool in_pos = false
+var string pos_type = ""
+var float pos_ent = 0.0
+
+if entry_long and not in_pos
+    in_pos := true
+    pos_type := "LONG"
+    pos_ent := close
+    strategy.entry("VWAP Long", strategy.long)
+
+if entry_short and not in_pos
+    in_pos := true
+    pos_type := "SHORT"
+    pos_ent := close
+    strategy.entry("VWAP Short", strategy.short)
+
+if in_pos
+    if pos_type == "LONG"
+        if high >= pos_ent + (tp_pips / 10000) or low <= pos_ent - (sl_pips / 10000)
+            in_pos := false
+            strategy.close("VWAP Long")
+    else
+        if low <= pos_ent - (tp_pips / 10000) or high >= pos_ent + (sl_pips / 10000)
+            in_pos := false
+            strategy.close("VWAP Short")
+
+plot(vwap, title="VWAP", color=color.blue, linewidth=2)
+plot(close, title="Price", color=close > open ? color.green : color.red, linewidth=1)
+
+if entry_long or entry_short
+    plotshape(series=entry_long, style=shape.diamond, location=location.belowbar, color=color.green)
+    plotshape(series=entry_short, style=shape.diamond, location=location.abovebar, color=color.red)
+
+if entry_long
+    alert(str.format("🟢 VWAP MOMENTUM LONG | Price: {0,number,0.00000} | VWAP: {1,number,0.00000} | Mom: {2,number,0.00000}", close, vwap, momentum), freq=alert.freq_once_per_bar_close)
+if entry_short
+    alert(str.format("🔴 VWAP MOMENTUM SHORT | Price: {0,number,0.00000} | VWAP: {1,number,0.00000} | Mom: {2,number,0.00000}", close, vwap, momentum), freq=alert.freq_once_per_bar_close)
