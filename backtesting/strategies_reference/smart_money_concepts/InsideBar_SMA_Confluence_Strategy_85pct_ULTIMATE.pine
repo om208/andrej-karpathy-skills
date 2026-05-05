@@ -204,26 +204,13 @@ if position_closed and (lot1_active or lot2_active)
 // SECTION 10: CHART VISUALIZATION
 // ============================================================================
 
-if show_sma
-    plot(sma, title="SMA(196)", color=color.blue, linewidth=2)
-
-if show_signals and is_inside_bar
-    bgcolor(color.new(color.aqua, 80), title="Inside Bar")
-
-if show_confluence and bullish_setup
-    bgcolor(color.new(color.green, 70), title="Bullish Setup")
-
-if show_confluence and bearish_setup
-    bgcolor(color.new(color.red, 70), title="Bearish Setup")
-
-if show_signals and signal_detected
-    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, title="Entry Signal")
-
-if show_signals and (lot1_active or lot2_active)
-    plotshape(series=true, style=shape.xcross, location=location.abovebar, color=color.orange, title="Position Active")
-
-if show_signals and (lot1_closed or lot2_closed)
-    plotshape(series=true, style=shape.flag, location=location.topbar, color=color.red, title="Exit Signal")
+plot(show_sma ? sma : na, title="SMA(196)", color=color.blue, linewidth=2)
+bgcolor(show_signals and is_inside_bar ? color.new(color.aqua, 80) : na, title="Inside Bar")
+bgcolor(show_confluence and bullish_setup ? color.new(color.green, 70) : na, title="Bullish Setup")
+bgcolor(show_confluence and bearish_setup ? color.new(color.red, 70) : na, title="Bearish Setup")
+plotshape(show_signals and signal_detected ? true : na, style=shape.diamond, location=location.belowbar, color=color.green, title="Entry Signal")
+plotshape(show_signals and (lot1_active or lot2_active) ? true : na, style=shape.xcross, location=location.abovebar, color=color.orange, title="Position Active")
+plotshape(show_signals and (lot1_closed or lot2_closed) ? true : na, style=shape.flag, location=location.topbar, color=color.red, title="Exit Signal")
 
 // ============================================================================
 // SECTION 11: STRATEGY EXECUTION
