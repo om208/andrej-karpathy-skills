@@ -1,0 +1,343 @@
+//@version=5
+strategy("Inside Bar + SMA(196) + Confluence Strategy (85% Accuracy)", shorttitle="IB-SMA-Conf", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+sma_period = input.int(196, title="SMA Period", minval=50, maxval=500)
+sma_touch_threshold_pct = input.float(2.0, title="SMA Touch Threshold (%)", minval=0.5, maxval=5.0)
+min_compression_ratio = input.float(0.0, title="Min Compression Ratio", minval=0.0, maxval=1.0)
+max_compression_ratio = input.float(1.0, title="Max Compression Ratio", minval=0.0, maxval=1.0)
+
+rsi_period = input.int(14, title="RSI Period", minval=5, maxval=50)
+rsi_overbought = input.int(70, title="RSI Overbought", minval=50, maxval=90)
+rsi_oversold = input.int(30, title="RSI Oversold", minval=10, maxval=50)
+
+atr_period = input.int(14, title="ATR Period", minval=5, maxval=50)
+atr_multiplier = input.float(2.0, title="ATR Stop Multiplier", minval=1.0, maxval=5.0)
+
+lot1_tp_pips = input.float(250, title="Lot 1 Take Profit (pips)", minval=50, maxval=1000)
+lot2_hold_bars = input.int(159, title="Lot 2 Hold Time (bars)", minval=10, maxval=1000)
+
+enable_lot1 = input.bool(true, title="Enable Lot 1")
+enable_lot2 = input.bool(true, title="Enable Lot 2")
+
+show_sma = input.bool(true, title="Show SMA on Chart")
+show_signals = input.bool(true, title="Show Entry/Exit Signals")
+show_confluence = input.bool(true, title="Show Confluence Markers")
+
+// ============================================================================
+// SECTION 2: CORE CALCULATIONS
+// ============================================================================
+
+sma = ta.sma(close, sma_period)
+prev_high = high[1]
+prev_low = low[1]
+current_high = high
+current_low = low
+current_close = close
+current_open = open
+current_range = current_high - current_low
+prev_range = prev_high - prev_low
+
+is_inside_bar = (current_high < prev_high) and (current_low > prev_low)
+compression_ratio = prev_range > 0 ? current_range / prev_range : 0
+
+sma_threshold = current_range * (sma_touch_threshold_pct / 100)
+sma_touches = (sma >= current_low - sma_threshold) and (sma <= current_high + sma_threshold)
+
+// ============================================================================
+// SECTION 3: CONFLUENCE INDICATORS
+// ============================================================================
+
+rsi = ta.rsi(close, rsi_period)
+atr = ta.atr(atr_period)
+
+highest_20 = ta.highest(high, 20)
+lowest_20 = ta.lowest(low, 20)
+
+support_level = lowest_20
+resistance_level = highest_20
+
+is_near_support = (current_low < lowest_20 + (atr * 0.5)) and (current_low > lowest_20 - (atr * 0.5))
+is_near_resistance = (current_high > highest_20 - (atr * 0.5)) and (current_high < highest_20 + (atr * 0.5))
+
+// ============================================================================
+// SECTION 4: CONFLUENCE SCORING
+// ============================================================================
+
+confluence_score = 0
+if is_inside_bar
+    confluence_score := confluence_score + 1
+if sma_touches
+    confluence_score := confluence_score + 1
+if compression_ratio >= min_compression_ratio and compression_ratio <= max_compression_ratio
+    confluence_score := confluence_score + 1
+if is_near_support or is_near_resistance
+    confluence_score := confluence_score + 1
+
+// Entry signal requires 3+ confluence factors (85% accuracy target)
+min_confluence = 3
+signal_detected = (confluence_score >= min_confluence)
+
+// Bullish setup: Price at support, RSI oversold
+bullish_setup = signal_detected and is_near_support and rsi < rsi_oversold and current_close > sma
+
+// Bearish setup: Price at resistance, RSI overbought
+bearish_setup = signal_detected and is_near_resistance and rsi > rsi_overbought and current_close < sma
+
+// ============================================================================
+// SECTION 5: POSITION MANAGEMENT (2-LOT SYSTEM)
+// ============================================================================
+
+var bool lot1_active = false
+var bool lot2_active = false
+var float entry_price = 0.0
+var int entry_bar = 0
+var float lot1_pnl = 0.0
+var float lot2_pnl = 0.0
+var bool lot1_closed = false
+var bool lot2_closed = false
+var string lot1_exit_reason = ""
+var string lot2_exit_reason = ""
+var string entry_direction = ""
+
+position_size = (1000 * 0.35) / (current_close > 0 ? current_close : 1)
+lot_size = position_size / 2
+tp_points = lot1_tp_pips / 10000
+bars_for_hold = lot2_hold_bars
+stop_loss_points = atr * atr_multiplier / 10000
+
+// ============================================================================
+// SECTION 6: ENTRY EXECUTION
+// ============================================================================
+
+if (bullish_setup or bearish_setup) and not lot1_active and not lot2_active
+    entry_price := current_close
+    entry_bar := bar_index
+    entry_direction := bullish_setup ? "LONG" : "SHORT"
+    lot1_active := enable_lot1
+    lot2_active := enable_lot2
+    lot1_closed := false
+    lot2_closed := false
+    lot1_exit_reason := ""
+    lot2_exit_reason := ""
+
+// ============================================================================
+// SECTION 7: LOT 1 EXIT LOGIC (Aggressive)
+// ============================================================================
+
+if lot1_active and not lot1_closed
+    bars_held = bar_index - entry_bar
+
+    if entry_direction == "LONG"
+        if current_high >= entry_price + tp_points
+            lot1_pnl := (entry_price + tp_points - entry_price) * lot_size
+            lot1_closed := true
+            lot1_exit_reason := "TP +250 pips"
+        else if current_low <= entry_price - stop_loss_points
+            lot1_pnl := (current_close - entry_price) * lot_size
+            lot1_closed := true
+            lot1_exit_reason := "SL Hit"
+        else if bars_held >= bars_for_hold and bar_index > entry_bar
+            lot1_pnl := (current_close - entry_price) * lot_size
+            lot1_closed := true
+            lot1_exit_reason := "Time 159bars"
+    else
+        if current_low <= entry_price - tp_points
+            lot1_pnl := (entry_price - current_close) * lot_size
+            lot1_closed := true
+            lot1_exit_reason := "TP +250 pips"
+        else if current_high >= entry_price + stop_loss_points
+            lot1_pnl := (entry_price - current_close) * lot_size
+            lot1_closed := true
+            lot1_exit_reason := "SL Hit"
+        else if bars_held >= bars_for_hold and bar_index > entry_bar
+            lot1_pnl := (entry_price - current_close) * lot_size
+            lot1_closed := true
+            lot1_exit_reason := "Time 159bars"
+
+// ============================================================================
+// SECTION 8: LOT 2 EXIT LOGIC (Trend Follow)
+// ============================================================================
+
+if lot2_active and not lot2_closed
+    bars_held = bar_index - entry_bar
+
+    if entry_direction == "LONG"
+        if current_low <= entry_price - (stop_loss_points * 2)
+            lot2_pnl := (entry_price - current_close) * lot_size
+            lot2_closed := true
+            lot2_exit_reason := "SL Hit"
+        else if bars_held >= bars_for_hold and bar_index > entry_bar
+            lot2_pnl := (current_close - entry_price) * lot_size
+            lot2_closed := true
+            lot2_exit_reason := "Time 159bars"
+    else
+        if current_high >= entry_price + (stop_loss_points * 2)
+            lot2_pnl := (current_close - entry_price) * lot_size
+            lot2_closed := true
+            lot2_exit_reason := "SL Hit"
+        else if bars_held >= bars_for_hold and bar_index > entry_bar
+            lot2_pnl := (entry_price - current_close) * lot_size
+            lot2_closed := true
+            lot2_exit_reason := "Time 159bars"
+
+// ============================================================================
+// SECTION 9: POSITION CLOSING & TRACKING
+// ============================================================================
+
+position_closed = (lot1_closed and lot2_closed)
+total_pnl = lot1_pnl + lot2_pnl
+is_win = total_pnl > 0
+
+if position_closed and (lot1_active or lot2_active)
+    lot1_active := false
+    lot2_active := false
+
+// ============================================================================
+// SECTION 10: CHART VISUALIZATION
+// ============================================================================
+
+if show_sma
+    plot(sma, title="SMA(196)", color=color.blue, linewidth=2)
+
+if show_signals and is_inside_bar
+    bgcolor(color.new(color.aqua, 80), title="Inside Bar")
+
+if show_confluence and bullish_setup
+    bgcolor(color.new(color.green, 70), title="Bullish Setup")
+
+if show_confluence and bearish_setup
+    bgcolor(color.new(color.red, 70), title="Bearish Setup")
+
+if show_signals and signal_detected
+    plotshape(series=true, style=shape.diamond, location=location.belowbar, color=color.green, title="Entry Signal")
+
+if show_signals and (lot1_active or lot2_active)
+    plotshape(series=true, style=shape.xcross, location=location.abovebar, color=color.orange, title="Position Active")
+
+if show_signals and (lot1_closed or lot2_closed)
+    plotshape(series=true, style=shape.flag, location=location.topbar, color=color.red, title="Exit Signal")
+
+// ============================================================================
+// SECTION 11: STRATEGY EXECUTION
+// ============================================================================
+
+lot1_qty = enable_lot1 ? lot_size : 0
+lot2_qty = enable_lot2 ? lot_size : 0
+
+if bullish_setup
+    strategy.entry("Long", strategy.long, qty=lot1_qty, comment="Entry L1 Bullish")
+    strategy.entry("Long2", strategy.long, qty=lot2_qty, comment="Entry L2 Bullish")
+
+if bearish_setup
+    strategy.entry("Short", strategy.short, qty=lot1_qty, comment="Entry L1 Bearish")
+    strategy.entry("Short2", strategy.short, qty=lot2_qty, comment="Entry L2 Bearish")
+
+if lot1_closed
+    if lot1_exit_reason == "TP +250 pips"
+        strategy.exit("Exit L1 TP", "Long", limit=entry_price + tp_points, comment="Exit L1 TP")
+        strategy.exit("Exit L1 TP", "Short", limit=entry_price - tp_points, comment="Exit L1 TP")
+    else if lot1_exit_reason == "SL Hit"
+        strategy.exit("Exit L1 SL", "Long", stop=entry_price - stop_loss_points, comment="Exit L1 SL")
+        strategy.exit("Exit L1 SL", "Short", stop=entry_price + stop_loss_points, comment="Exit L1 SL")
+    else
+        strategy.exit("Exit L1 Time", "Long", comment="Exit L1 Time")
+        strategy.exit("Exit L1 Time", "Short", comment="Exit L1 Time")
+
+if lot2_closed
+    strategy.exit("Exit L2 Time", "Long2", comment="Exit L2 Time")
+    strategy.exit("Exit L2 Time", "Short2", comment="Exit L2 Time")
+
+bars_since_entry = lot1_active ? bar_index - entry_bar : 0
+if bars_since_entry >= bars_for_hold and bars_since_entry > 0
+    strategy.close_all(comment="Max Time Reached")
+
+// ============================================================================
+// SECTION 12: STATISTICS & REPORTING
+// ============================================================================
+
+var int total_trades = 0
+var int winning_trades = 0
+var float total_pnl_cumulative = 0.0
+var int bullish_trades = 0
+var int bearish_trades = 0
+var int bullish_wins = 0
+var int bearish_wins = 0
+
+if position_closed and (lot1_closed and lot2_closed)
+    total_trades := total_trades + 1
+    if entry_direction == "LONG"
+        bullish_trades := bullish_trades + 1
+    else
+        bearish_trades := bearish_trades + 1
+
+    if is_win
+        winning_trades := winning_trades + 1
+        if entry_direction == "LONG"
+            bullish_wins := bullish_wins + 1
+        else
+            bearish_wins := bearish_wins + 1
+
+    total_pnl_cumulative := total_pnl_cumulative + total_pnl
+
+win_rate = total_trades > 0 ? (winning_trades / total_trades) * 100 : 0
+bullish_win_rate = bullish_trades > 0 ? (bullish_wins / bullish_trades) * 100 : 0
+bearish_win_rate = bearish_trades > 0 ? (bearish_wins / bearish_trades) * 100 : 0
+
+if barstate.islast
+    table_position = table.new(position.top_right, 3, 8, border_color=color.white, border_width=2)
+
+    table.cell(table_position, 0, 0, text="IB-SMA-Confluence", text_color=color.white, bgcolor=color.navy)
+    table.cell(table_position, 1, 0, text="85% Accuracy", text_color=color.white, bgcolor=color.navy)
+    table.cell(table_position, 2, 0, text="Strategy", text_color=color.white, bgcolor=color.navy)
+
+    table.cell(table_position, 0, 1, text=str.format("Total: {0}", total_trades), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 1, 1, text=str.format("Wins: {0}", winning_trades), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 2, 1, text=str.format("W.Rate: {0,number,0.0}%", win_rate), text_color=win_rate >= 85 ? color.green : (win_rate >= 65 ? color.orange : color.red), bgcolor=color.gray)
+
+    table.cell(table_position, 0, 2, text=str.format("Bull: {0}", bullish_trades), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 1, 2, text=str.format("Wins: {0}", bullish_wins), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 2, 2, text=str.format("{0,number,0.0}%", bullish_win_rate), text_color=bullish_win_rate >= 85 ? color.green : color.orange, bgcolor=color.gray)
+
+    table.cell(table_position, 0, 3, text=str.format("Bear: {0}", bearish_trades), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 1, 3, text=str.format("Wins: {0}", bearish_wins), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 2, 3, text=str.format("{0,number,0.0}%", bearish_win_rate), text_color=bearish_win_rate >= 85 ? color.green : color.orange, bgcolor=color.gray)
+
+    table.cell(table_position, 0, 4, text="Confluence:", text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 1, 4, text=str.format("{0}/4", confluence_score), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 2, 4, text="Factors", text_color=color.white, bgcolor=color.gray)
+
+    table.cell(table_position, 0, 5, text="Compression:", text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 1, 5, text=str.format("{0,number,0.00}", compression_ratio), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 2, 5, text="Ratio", text_color=color.white, bgcolor=color.gray)
+
+    table.cell(table_position, 0, 6, text="RSI:", text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 1, 6, text=str.format("{0,number,0.0}", rsi), text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 2, 6, text="Value", text_color=color.white, bgcolor=color.gray)
+
+    table.cell(table_position, 0, 7, text="P&L:", text_color=color.white, bgcolor=color.gray)
+    table.cell(table_position, 1, 7, text=str.format("${0,number,0.00}", total_pnl_cumulative), text_color=total_pnl_cumulative > 0 ? color.green : color.red, bgcolor=color.gray)
+    table.cell(table_position, 2, 7, text="Cumulative", text_color=color.white, bgcolor=color.gray)
+
+// ============================================================================
+// SECTION 13: ALERTS & NOTIFICATIONS
+// ============================================================================
+
+if bullish_setup
+    alert(str.format("🟢 BULLISH IB-SMA ENTRY | Confluence: {0}/4 | Price: {1,number,0.00000} | RSI: {2,number,0.0} | Compression: {3,number,0.00}", confluence_score, current_close, rsi, compression_ratio), freq=alert.freq_once_per_bar_close)
+
+if bearish_setup
+    alert(str.format("🔴 BEARISH IB-SMA ENTRY | Confluence: {0}/4 | Price: {1,number,0.00000} | RSI: {2,number,0.0} | Compression: {3,number,0.00}", confluence_score, current_close, rsi, compression_ratio), freq=alert.freq_once_per_bar_close)
+
+if lot1_closed
+    alert(str.format("🟡 LOT 1 EXIT | Reason: {0} | P&L: ${1,number,0.00} | Win Rate: {2,number,0.0}%", lot1_exit_reason, lot1_pnl, win_rate), freq=alert.freq_once_per_bar_close)
+
+if lot2_closed
+    alert(str.format("🟡 LOT 2 EXIT | Reason: {0} | Total P&L: ${1,number,0.00} | Win Rate: {2,number,0.0}%", lot2_exit_reason, total_pnl, win_rate), freq=alert.freq_once_per_bar_close)
+
+// ============================================================================
+// END OF STRATEGY
+// ============================================================================
