@@ -1,5 +1,5 @@
 //@version=5
-strategy("Inside Bar + SMA(196) + Confluence Strategy (85% Accuracy)", shorttitle="IB-SMA-Conf", overlay=true, pyramgling=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+strategy("Inside Bar + SMA(196) + Confluence Strategy (85% Accuracy)", shorttitle="IB-SMA-Conf", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
 
 // ============================================================================
 // SECTION 1: INPUT SETTINGS
@@ -208,9 +208,9 @@ plot(show_sma ? sma : na, title="SMA(196)", color=color.blue, linewidth=2)
 bgcolor(show_signals and is_inside_bar ? color.new(color.aqua, 80) : na, title="Inside Bar")
 bgcolor(show_confluence and bullish_setup ? color.new(color.green, 70) : na, title="Bullish Setup")
 bgcolor(show_confluence and bearish_setup ? color.new(color.red, 70) : na, title="Bearish Setup")
-plotshape(show_signals and signal_detected ? true : na, style=shape.diamond, location=location.belowbar, color=color.green, title="Entry Signal")
-plotshape(show_signals and (lot1_active or lot2_active) ? true : na, style=shape.xcross, location=location.abovebar, color=color.orange, title="Position Active")
-plotshape(show_signals and (lot1_closed or lot2_closed) ? true : na, style=shape.flag, location=location.topbar, color=color.red, title="Exit Signal")
+plotshape(show_signals and signal_detected, style=shape.diamond, location=location.belowbar, color=color.green, title="Entry Signal")
+plotshape(show_signals and (lot1_active or lot2_active), style=shape.xcross, location=location.abovebar, color=color.orange, title="Position Active")
+plotshape(show_signals and (lot1_closed or lot2_closed), style=shape.flag, location=location.topbar, color=color.red, title="Exit Signal")
 
 // ============================================================================
 // SECTION 11: STRATEGY EXECUTION
