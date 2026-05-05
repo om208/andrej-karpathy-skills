@@ -1,0 +1,83 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © sugatmankar
+// Original: Inside Bars/Candles [CodeCraftedTrading]
+// Purpose: Identifies inside bar patterns with visual highlights and level tracking
+// Reference Material for: backtesting/strategies_reference/inside_candles/
+
+//@version=6
+indicator('Inside Bars/Candles [CodeCraftedTrading]', shorttitle = 'Inside Bars', overlay = true)
+
+//**************** Inside bars ****************//
+var insideCandlesColor = input.color(defval = color.new(color.blue, 50), title = 'InsideCandlesColor')
+var showInsideCandleColor = input.bool(defval=true, title="Highlight Inside Candles With Color")
+var highColor = input.color(defval = color.red, title = 'High Line Color')
+var lowColor = input.color(defval = color.green, title = 'Low Line Color')
+var showHighLowLabel = input.bool(defval = true, title = 'Show High Low Price Labels')
+var showHistoryRangeBox = input.bool(defval = false,title = "Show History Inside range Box")
+varip lastHigh = 0.0
+varip lastLow = 0.0
+varip broken = false
+varip inrange = false
+varip isInsideBarMade = false
+varip parent_barindex = 0
+
+
+if lastHigh !=0.0 and lastLow !=0.0
+    isInsideBarMade := high < lastHigh and low > lastLow and barstate.isconfirmed
+else
+    isInsideBarMade := high < high[1] and low > low[1] and barstate.isconfirmed
+
+if isInsideBarMade and not inrange
+    lastHigh := high[1]
+    lastLow := low[1]
+    broken := false
+    parent_barindex := bar_index[1]
+    parent_barindex
+
+if low < lastLow or high > lastHigh
+    broken := true
+    broken
+
+if high < lastHigh and lastLow < low
+    inrange := true
+    isInsideBarMade := true
+    isInsideBarMade
+
+
+if broken
+    inrange := false
+    isInsideBarMade := false
+    lastHigh:=na
+    lastLow:=na
+    isInsideBarMade
+
+barcolor(isInsideBarMade and showInsideCandleColor ? insideCandlesColor : na, editable = false, title = 'Inside Candles Color')
+
+var line highLine = na
+var line lowLine = na
+var label highLabel = na
+var label lowLabel = na
+
+
+// Delete previous lines and labels
+
+
+if not showHistoryRangeBox
+    line.delete(highLine[1])
+    line.delete(lowLine[1])
+    label.delete(highLabel[1])
+    label.delete(lowLabel[1])
+
+// Plot horizontal lines with label on the parent bar's high and low until broken
+if inrange
+    //delete unnecessary duplicate pre to pre [2] lines and labels but keep prev [1] for history range visibility
+    label.delete(highLabel[2])
+    label.delete(lowLabel[2])
+    line.delete(highLine[2])
+    line.delete(lowLine[2])
+    highLine := line.new(parent_barindex, lastHigh, bar_index, lastHigh, width = 2, color = highColor)
+    lowLine := line.new(parent_barindex, lastLow, bar_index, lastLow, width = 2, color = lowColor)
+    highLabel := label.new(parent_barindex, lastHigh,yloc = yloc.abovebar, text = str.tostring(math.round(lastHigh, 5)), textcolor = highColor, color = color.new(highColor, 100), style = label.style_label_center, size = size.normal)
+    lowLabel := label.new(parent_barindex, lastLow,yloc = yloc.belowbar, text = str.tostring(math.round(lastLow, 5)), textcolor = lowColor, color = color.new(lowColor, 100), style = label.style_label_center, size = size.normal)
+
+// END OF INDICATOR
