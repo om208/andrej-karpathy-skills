@@ -1,0 +1,58 @@
+//@version=5
+indicator("High-Momentum Option Breakout(MastersinMarkets)", overlay=true, max_labels_count=500)
+
+// --- Inputs ---
+lookbackPeriod = input.int(50, "Breakout Lookback")
+atrLength      = input.int(14, "ATR Length")
+atrMultiplier  = input.float(4, "ATR SL Multiplier (Tighter for Options)")
+adxThreshold   = input.int(20, "Minimum ADX for Entry")
+emaLength      = input.int(200, "HTF Trend Filter (EMA)")
+
+// --- Indicator Calculations ---
+upperBand = ta.highest(high[1], lookbackPeriod)
+lowerBand = ta.lowest(low[1], lookbackPeriod)
+emaFilter = ta.ema(close, emaLength)
+atr       = ta.atr(atrLength)
+
+// ADX Calculation
+[diplus, diminus, adxValue] = ta.dmi(14, 14)
+
+// Volume Confirmation
+avgVolume = ta.sma(volume, 20)
+volConfirm = volume > avgVolume
+
+// --- Entry Filters ---
+longCondition  = ta.crossover(close, upperBand) and close > emaFilter and adxValue > adxThreshold and volConfirm
+shortCondition = ta.crossunder(close, lowerBand) and close < emaFilter and adxValue > adxThreshold and volConfirm
+
+// --- State Management ---
+var float slLevel = na
+var int marketPosition = 0 
+
+if longCondition and marketPosition <= 0
+    marketPosition := 1
+    slLevel := close - (atr * atrMultiplier)
+
+if shortCondition and marketPosition >= 0
+    marketPosition := -1
+    slLevel := close + (atr * atrMultiplier)
+
+// --- Exit Logic (Momentum-Based) ---
+// For Options, we exit if price hits SL or if ADX starts falling (losing steam)
+adxFalling = adxValue < adxValue[1]
+longExit  = marketPosition == 1 and (ta.crossunder(close, slLevel) or adxFalling)
+shortExit = marketPosition == -1 and (ta.crossover(close, slLevel) or adxFalling)
+
+if longExit or shortExit
+    marketPosition := 0
+    slLevel := na
+
+// --- Visuals ---
+plot(emaFilter, "Trend Filter", color=color.new(color.gray, 50), linewidth=2)
+plot(slLevel, "Dynamic SL", color=color.red, style=plot.style_linebr)
+
+plotshape(longCondition, "Buy CE", shape.labelup, location.belowbar, color.green, text="BUY CE", textcolor=color.white)
+plotshape(shortCondition, "Buy PE", shape.labeldown, location.abovebar, color.red, text="BUY PE", textcolor=color.white)
+
+// Visual feedback for ADX strength
+bgcolor(adxValue > adxThreshold ? color.new(color.green, 90) : color.new(color.red, 90))

@@ -1,0 +1,147 @@
+//@version=6
+indicator("Multi-Timeframe Inside Bar Breakout (4-Symbol Simultaneous)", overlay=true, max_labels_count=500)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEW INPUTS - Color and Display Customization
+// ═══════════════════════════════════════════════════════════════════════════════
+grpColors = "Label Colors"
+bullColor = input.color(color.green, title="Bullish Color", group=grpColors)
+bearColor = input.color(color.red, title="Bearish Color", group=grpColors)
+labelOpacity = input.int(0, title="Label Opacity (%)", minval=0, maxval=90, tooltip="0 = Solid, 90 = Very transparent", group=grpColors)
+
+grpPosition = "Label Positioning"
+labelDistPct = input.float(0.15, title="Distance (% of bar range)", minval=0.05, maxval=0.50, step=0.05, group=grpPosition)
+labelStagger = input.float(0.05, title="Stagger Between TFs (%)", minval=0.0, maxval=0.20, step=0.01, group=grpPosition)
+
+grpHistory = "Historical Display"
+maxLabelsPerTF = input.int(25, title="Max Labels Per Timeframe", minval=5, maxval=125, group=grpHistory)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORIGINAL INPUTS - Unchanged from v5
+// ═══════════════════════════════════════════════════════════════════════════════
+symbol1 = input.symbol("SPY", "Symbol 1")
+symbol2 = input.symbol("QQQ", "Symbol 2")
+symbol3 = input.symbol("IWM", "Symbol 3")
+symbol4 = input.symbol("DIA", "Symbol 4")
+
+timeframe1 = input.timeframe("15", "Timeframe 1")
+timeframe2 = input.timeframe("30", "Timeframe 2")
+timeframe3 = input.timeframe("60", "Timeframe 3")
+timeframe4 = input.timeframe("D", "Timeframe 4")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORIGINAL FUNCTION - Unchanged from v5
+// ═══════════════════════════════════════════════════════════════════════════════
+trackInsideBars(tf) =>
+    [high1, low1, close1] = request.security(symbol1, tf, [high, low, close], lookahead=barmerge.lookahead_on)
+    [high2, low2, close2] = request.security(symbol2, tf, [high, low, close], lookahead=barmerge.lookahead_on)
+    [high3, low3, close3] = request.security(symbol3, tf, [high, low, close], lookahead=barmerge.lookahead_on)
+    [high4, low4, close4] = request.security(symbol4, tf, [high, low, close], lookahead=barmerge.lookahead_on)
+
+    // Define an inside bar as a bar that does not break the previous high or low
+    insideBar1 = (high1 < high1[1] and low1 > low1[1])
+    insideBar2 = (high2 < high2[1] and low2 > low2[1])
+    insideBar3 = (high3 < high3[1] and low3 > low3[1])
+    insideBar4 = (high4 < high4[1] and low4 > low4[1])
+
+    // Check if all four symbols had inside bars in the previous bar
+    allInsideBars = insideBar1[1] and insideBar2[1] and insideBar3[1] and insideBar4[1]
+
+    // Check if all four symbols are breaking their inside bars to the upside (bullish) or downside (bearish)
+    isBullishBreak = (close1 > high1[1] and close2 > high2[1] and close3 > high3[1] and close4 > high4[1])
+    isBearishBreak = (close1 < low1[1] and close2 < low2[1] and close3 < low3[1] and close4 < low4[1])
+
+    [allInsideBars, isBullishBreak, isBearishBreak]
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORIGINAL DETECTION - Unchanged from v5
+// ═══════════════════════════════════════════════════════════════════════════════
+[insideBars15, bullBreak15, bearBreak15] = trackInsideBars(timeframe1)
+[insideBars30, bullBreak30, bearBreak30] = trackInsideBars(timeframe2)
+[insideBars60, bullBreak60, bearBreak60] = trackInsideBars(timeframe3)
+[insideBarsD, bullBreakD, bearBreakD] = trackInsideBars(timeframe4)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEW - Adaptive Label Distance (replaces fixed 35)
+// ═══════════════════════════════════════════════════════════════════════════════
+barRange = high - low
+baseDist = barRange * labelDistPct
+baseDist := math.max(baseDist, syminfo.mintick * 10)
+
+staggerMult = barRange * labelStagger
+dist1 = baseDist + (staggerMult * 0)
+dist2 = baseDist + (staggerMult * 1)
+dist3 = baseDist + (staggerMult * 2)
+dist4 = baseDist + (staggerMult * 3)
+
+// Apply colors with opacity
+bullColorFinal = color.new(bullColor, labelOpacity)
+bearColorFinal = color.new(bearColor, labelOpacity)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEW - Label Management Arrays
+// ═══════════════════════════════════════════════════════════════════════════════
+var array<label> bullLabels1 = array.new<label>()
+var array<label> bearLabels1 = array.new<label>()
+var array<label> bullLabels2 = array.new<label>()
+var array<label> bearLabels2 = array.new<label>()
+var array<label> bullLabels3 = array.new<label>()
+var array<label> bearLabels3 = array.new<label>()
+var array<label> bullLabels4 = array.new<label>()
+var array<label> bearLabels4 = array.new<label>()
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPDATED - Labels with adaptive distance and color customization
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Timeframe 1
+if (insideBars15 and bullBreak15)
+    lbl = label.new(bar_index, low - dist1, text="📈IBSB " + timeframe1, style=label.style_label_up, color=bullColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bullLabels1, lbl)
+    while array.size(bullLabels1) > maxLabelsPerTF
+        label.delete(array.shift(bullLabels1))
+
+if (insideBars15 and bearBreak15)
+    lbl = label.new(bar_index, high + dist1, text="📉IBSB " + timeframe1, style=label.style_label_down, color=bearColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bearLabels1, lbl)
+    while array.size(bearLabels1) > maxLabelsPerTF
+        label.delete(array.shift(bearLabels1))
+
+// Timeframe 2
+if (insideBars30 and bullBreak30)
+    lbl = label.new(bar_index, low - dist2, text="📈IBSB " + timeframe2, style=label.style_label_up, color=bullColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bullLabels2, lbl)
+    while array.size(bullLabels2) > maxLabelsPerTF
+        label.delete(array.shift(bullLabels2))
+
+if (insideBars30 and bearBreak30)
+    lbl = label.new(bar_index, high + dist2, text="📉IBSB " + timeframe2, style=label.style_label_down, color=bearColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bearLabels2, lbl)
+    while array.size(bearLabels2) > maxLabelsPerTF
+        label.delete(array.shift(bearLabels2))
+
+// Timeframe 3
+if (insideBars60 and bullBreak60)
+    lbl = label.new(bar_index, low - dist3, text="📈IBSB " + timeframe3, style=label.style_label_up, color=bullColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bullLabels3, lbl)
+    while array.size(bullLabels3) > maxLabelsPerTF
+        label.delete(array.shift(bullLabels3))
+
+if (insideBars60 and bearBreak60)
+    lbl = label.new(bar_index, high + dist3, text="📉IBSB " + timeframe3, style=label.style_label_down, color=bearColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bearLabels3, lbl)
+    while array.size(bearLabels3) > maxLabelsPerTF
+        label.delete(array.shift(bearLabels3))
+
+// Timeframe 4
+if (insideBarsD and bullBreakD)
+    lbl = label.new(bar_index, low - dist4, text="📈IBSB " + timeframe4, style=label.style_label_up, color=bullColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bullLabels4, lbl)
+    while array.size(bullLabels4) > maxLabelsPerTF
+        label.delete(array.shift(bullLabels4))
+
+if (insideBarsD and bearBreakD)
+    lbl = label.new(bar_index, high + dist4, text="📉IBSB " + timeframe4, style=label.style_label_down, color=bearColorFinal, textcolor=color.white, size=size.normal)
+    array.push(bearLabels4, lbl)
+    while array.size(bearLabels4) > maxLabelsPerTF
+        label.delete(array.shift(bearLabels4))

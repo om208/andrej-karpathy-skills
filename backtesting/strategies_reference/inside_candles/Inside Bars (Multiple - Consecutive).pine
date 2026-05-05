@@ -1,0 +1,57 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © nilstrades_
+
+//@version=6
+indicator("Inside Bars (Multiple / Consecutive)", "Inside Bars Multi", overlay = true)
+
+expandRange = input.bool(true, "Expand Inside Bar Range on Wick-Through",
+     tooltip = "When enabled, the range high/low expands to absorb wicks instead of resetting the zone.")
+
+var float highBeforeInsideBar = na
+var float lowBeforeInsideBar = na
+var bool consecutiveInsideBars = false
+
+isInsideBar = high <= high[1] and low >= low[1]
+
+reset = false
+breakoutUp = false
+breakoutDn = false
+
+if isInsideBar and not consecutiveInsideBars
+    highBeforeInsideBar := high[1]
+    lowBeforeInsideBar := low[1]
+    consecutiveInsideBars := true
+
+if consecutiveInsideBars
+    if expandRange and barstate.isconfirmed
+        if high > highBeforeInsideBar and math.max(open,close) <= highBeforeInsideBar
+            highBeforeInsideBar := high
+        if low < lowBeforeInsideBar and math.min(open,close) >= lowBeforeInsideBar
+            lowBeforeInsideBar := low
+        if close > highBeforeInsideBar
+            breakoutUp := true
+            reset := true
+        if close < lowBeforeInsideBar
+            breakoutDn := true
+            reset := true
+    else
+        if high > highBeforeInsideBar
+            breakoutUp := true
+            reset := true
+        if low < lowBeforeInsideBar
+            breakoutDn := true
+            reset := true
+
+if reset
+    highBeforeInsideBar := na
+    lowBeforeInsideBar := na
+    consecutiveInsideBars := false
+
+barcolor(consecutiveInsideBars ? color.new(color.yellow,100) : na,title="Inside Bar Color")
+
+hi = plot(highBeforeInsideBar,"Range High",style=plot.style_linebr,color=color.new(color.gray,70))
+lo = plot(lowBeforeInsideBar,"Range Low",style=plot.style_linebr,color=color.new(color.gray,70))
+fill(hi,lo,color.new(color.gray,90))
+
+plotshape(breakoutUp,"Range Breakout Up",shape.triangleup,location.abovebar,color.green,display=display.pane)
+plotshape(breakoutDn,"Range Breakout Down",shape.triangledown,location.belowbar,color.red,display=display.pane)
