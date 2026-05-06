@@ -1,5 +1,16 @@
 # CLAUDE.md
 
+## 🔒 OFFICIAL REPOSITORY (DO NOT CHANGE)
+
+**Repository Owner**: om208  
+**Repository Name**: andrej-karpathy-skills  
+**Repository URL**: https://github.com/om208/andrej-karpathy-skills  
+**Development Branch**: claude/backtesting-system-8OIqR  
+
+**CRITICAL**: All git operations, commits, and pushes go to this repository ONLY. Never change this. Never use a different repository.
+
+---
+
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
