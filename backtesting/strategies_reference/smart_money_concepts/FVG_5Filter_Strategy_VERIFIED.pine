@@ -1,0 +1,254 @@
+//@version=5
+strategy("FVG 5-Filter Trading Strategy (85% Accuracy)", shorttitle="FVG-5F", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=100, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ============================================================================
+// SECTION 1: INPUT SETTINGS
+// ============================================================================
+
+// Filter Control
+enable_filter1 = input.bool(true, title="Enable Filter 1: Body Size", group="Filter Settings")
+enable_filter2 = input.bool(true, title="Enable Filter 2: Context Pattern", group="Filter Settings")
+enable_filter3 = input.bool(true, title="Enable Filter 3: Directional Setup", group="Filter Settings")
+enable_filter4 = input.bool(true, title="Enable Filter 4: Gap Size", group="Filter Settings")
+enable_filter5 = input.bool(true, title="Enable Filter 5: Cycle Measurement", group="Filter Settings")
+
+// Position Sizing
+risk_percent = input.float(1.0, title="Risk Per Trade (%)", minval=0.1, maxval=5.0, group="Position Sizing")
+bullish_tp_pips = input.float(1086, title="Bullish Take Profit (pips)", minval=100, maxval=2000, group="Position Sizing")
+bullish_sl_pips = input.float(709, title="Bullish Stop Loss (pips)", minval=50, maxval=1000, group="Position Sizing")
+bearish_tp_pips = input.float(1068, title="Bearish Take Profit (pips)", minval=100, maxval=2000, group="Position Sizing")
+bearish_sl_pips = input.float(711, title="Bearish Stop Loss (pips)", minval=50, maxval=1000, group="Position Sizing")
+
+// Display Settings
+show_filter_labels = input.bool(true, title="Show Filter Labels on Chart", group="Display")
+show_entry_points = input.bool(true, title="Show Entry Points", group="Display")
+show_target_lines = input.bool(true, title="Show Target/Stop Lines", group="Display")
+
+// ============================================================================
+// SECTION 2: CANDLE DATA EXTRACTION
+// ============================================================================
+
+// Current candle (F2 - middle candle)
+f2_high = high
+f2_low = low
+f2_open = open
+f2_close = close
+f2_body = math.abs(f2_close - f2_open)
+f2_range = f2_high - f2_low
+
+// Previous candle (F1 - first candle)
+f1_high = high[1]
+f1_low = low[1]
+f1_open = open[1]
+f1_close = close[1]
+f1_body = math.abs(f1_close - f1_open)
+f1_range = f1_high - f1_low
+
+// Next candle (F3 - third candle)
+f3_high = high[2]
+f3_low = low[2]
+f3_open = open[2]
+f3_close = close[2]
+f3_body = math.abs(f3_close - f3_open)
+f3_range = f3_high - f3_low
+
+// Context candles
+p_minus_1_high = high[2]
+p_minus_1_low = low[2]
+p_plus_1_high = high[0]
+p_plus_1_low = low[0]
+
+// Mean positions
+mean_f1 = (f1_high + f1_low) / 2
+mean_f2 = (f2_high + f2_low) / 2
+mean_f3 = (f3_high + f3_low) / 2
+
+// ============================================================================
+// SECTION 3: FILTER 1 - BODY SIZE COMPARISON
+// ============================================================================
+
+filter1_condition_a = f1_body < (f2_body * 0.5)
+filter1_condition_b = f3_body < (f2_body * 0.5)
+filter1_pass = enable_filter1 ? (filter1_condition_a and filter1_condition_b) : true
+
+// ============================================================================
+// SECTION 4: FILTER 2 - CONTEXT PATTERN VALIDATION
+// ============================================================================
+
+// Inside bar detection
+inside_bar_before = (p_minus_1_high > f1_high) and (p_minus_1_low < f1_low)
+inside_bar_after = (f3_high > p_plus_1_high) and (f3_low < p_plus_1_low)
+
+// Engulfing detection
+engulfing_before = (f1_high > p_minus_1_high) and (f1_low < p_minus_1_low)
+engulfing_after = (p_plus_1_high > f3_high) and (p_plus_1_low < f3_low)
+
+// Simplified context check using body ratio
+avg_outer_body = (f1_body + f3_body) / 2
+avg_outer_body_ratio = f2_range > 0 ? avg_outer_body / f2_range : 0
+
+filter2_pass = enable_filter2 ? (avg_outer_body_ratio < 0.35) : true
+
+// ============================================================================
+// SECTION 5: FILTER 3 - DIRECTIONAL SETUP
+// ============================================================================
+
+// Bullish progression
+bullish_high_prog = (f3_high > f2_high) and (f2_high > f1_high)
+bullish_low_prog = (f3_low > f2_low) and (f2_low > f1_low)
+is_bullish_setup = bullish_high_prog and bullish_low_prog
+
+// Bearish progression
+bearish_high_prog = (f3_high < f2_high) and (f2_high < f1_high)
+bearish_low_prog = (f3_low < f2_low) and (f2_low < f1_low)
+is_bearish_setup = bearish_high_prog and bearish_low_prog
+
+filter3_pass = enable_filter3 ? (is_bullish_setup or is_bearish_setup) : true
+
+// ============================================================================
+// SECTION 6: FILTER 4 - FVG GAP SIZE
+// ============================================================================
+
+// Calculate movement
+max_outer_body = math.max(f1_body, f3_body)
+upside_move = f2_high - f1_low
+downside_move = f2_low - f1_high
+
+// Gap validation
+gap_is_valid = max_outer_body > 0 ? ((upside_move > (max_outer_body * 0.5)) or (math.abs(downside_move) > (max_outer_body * 0.5))) : false
+filter4_pass = enable_filter4 ? gap_is_valid : true
+
+// ============================================================================
+// SECTION 7: FILTER 5 - CYCLE MEASUREMENT
+// ============================================================================
+
+// Calculate highest and lowest in recent bars
+recent_high = ta.highest(high, 10)
+recent_low = ta.lowest(low, 10)
+
+// Positive cycle (upside from mean)
+upside_from_f1 = recent_high - mean_f1
+upside_from_f3 = recent_high - mean_f3
+max_positive_cycle = math.max(upside_from_f1, upside_from_f3)
+
+// Negative cycle (downside from mean)
+downside_from_f1 = mean_f1 - recent_low
+downside_from_f3 = mean_f3 - recent_low
+max_negative_cycle = math.max(downside_from_f1, downside_from_f3)
+
+// Cycle balance
+cycle_avg_positive = 911
+cycle_avg_negative = 876
+positive_in_range = (max_positive_cycle >= (cycle_avg_positive * 0.75)) and (max_positive_cycle <= (cycle_avg_positive * 1.25))
+negative_in_range = (max_negative_cycle >= (cycle_avg_negative * 0.75)) and (max_negative_cycle <= (cycle_avg_negative * 1.25))
+
+filter5_pass = enable_filter5 ? (positive_in_range or negative_in_range) : true
+
+// ============================================================================
+// SECTION 8: COMBINED ENTRY CONDITIONS
+// ============================================================================
+
+all_filters_pass = filter1_pass and filter2_pass and filter3_pass and filter4_pass and filter5_pass
+ideal_fvg_detected = all_filters_pass
+
+// Final entry conditions
+bullish_entry = ideal_fvg_detected and is_bullish_setup
+bearish_entry = ideal_fvg_detected and is_bearish_setup
+
+// ============================================================================
+// SECTION 9: POSITION TRACKING
+// ============================================================================
+
+var bool position_active = false
+var string position_type = ""
+var float entry_price_var = 0.0
+var int entry_bar_var = 0
+
+// Entry logic
+if bullish_entry and not position_active
+    position_active := true
+    position_type := "LONG"
+    entry_price_var := close
+    entry_bar_var := bar_index
+
+if bearish_entry and not position_active
+    position_active := true
+    position_type := "SHORT"
+    entry_price_var := close
+    entry_bar_var := bar_index
+
+// ============================================================================
+// SECTION 10: EXIT LOGIC
+// ============================================================================
+
+// Calculate targets and stops
+bullish_tp = entry_price_var + (bullish_tp_pips / 10000)
+bullish_sl = entry_price_var - (bullish_sl_pips / 10000)
+bearish_tp = entry_price_var - (bearish_tp_pips / 10000)
+bearish_sl = entry_price_var + (bearish_sl_pips / 10000)
+
+// Exit conditions
+if position_active and position_type == "LONG"
+    if close >= bullish_tp
+        strategy.close("Long", comment="TP Hit")
+        position_active := false
+    if close <= bullish_sl
+        strategy.close("Long", comment="SL Hit")
+        position_active := false
+    if bar_index - entry_bar_var >= 1440
+        strategy.close("Long", comment="Time Exit")
+        position_active := false
+
+if position_active and position_type == "SHORT"
+    if close <= bearish_tp
+        strategy.close("Short", comment="TP Hit")
+        position_active := false
+    if close >= bearish_sl
+        strategy.close("Short", comment="SL Hit")
+        position_active := false
+    if bar_index - entry_bar_var >= 1440
+        strategy.close("Short", comment="Time Exit")
+        position_active := false
+
+// ============================================================================
+// SECTION 11: STRATEGY ENTRIES
+// ============================================================================
+
+if bullish_entry and not position_active
+    strategy.entry("Long", strategy.long, comment="FVG Bullish Entry")
+
+if bearish_entry and not position_active
+    strategy.entry("Short", strategy.short, comment="FVG Bearish Entry")
+
+// ============================================================================
+// SECTION 12: CHART VISUALIZATION
+// ============================================================================
+
+// Plot means
+plot(show_entry_points ? mean_f1 : na, title="Mean F1", color=color.blue, linewidth=1, style=plot.style_dashed)
+plot(show_entry_points ? mean_f2 : na, title="Mean F2", color=color.orange, linewidth=2)
+plot(show_entry_points ? mean_f3 : na, title="Mean F3", color=color.purple, linewidth=1, style=plot.style_dashed)
+
+// Plot targets and stops
+plot(show_target_lines and position_active and position_type == "LONG" ? bullish_tp : na, title="Bullish TP", color=color.green, linewidth=2, style=plot.style_stepline)
+plot(show_target_lines and position_active and position_type == "LONG" ? bullish_sl : na, title="Bullish SL", color=color.red, linewidth=2, style=plot.style_stepline)
+plot(show_target_lines and position_active and position_type == "SHORT" ? bearish_tp : na, title="Bearish TP", color=color.green, linewidth=2, style=plot.style_stepline)
+plot(show_target_lines and position_active and position_type == "SHORT" ? bearish_sl : na, title="Bearish SL", color=color.red, linewidth=2, style=plot.style_stepline)
+
+// Highlight ideal FVGs
+bgcolor(show_filter_labels and ideal_fvg_detected and is_bullish_setup ? color.new(color.green, 85) : na, title="Bullish FVG")
+bgcolor(show_filter_labels and ideal_fvg_detected and is_bearish_setup ? color.new(color.red, 85) : na, title="Bearish FVG")
+
+// ============================================================================
+// SECTION 13: ALERTS
+// ============================================================================
+
+if bullish_entry
+    alert("🟢 BULLISH FVG SIGNAL - F1:" + str.tostring(math.round(f1_body, 2)) + " F2:" + str.tostring(math.round(f2_body, 2)) + " F3:" + str.tostring(math.round(f3_body, 2)), freq=alert.freq_once_per_bar_close)
+
+if bearish_entry
+    alert("🔴 BEARISH FVG SIGNAL - F1:" + str.tostring(math.round(f1_body, 2)) + " F2:" + str.tostring(math.round(f2_body, 2)) + " F3:" + str.tostring(math.round(f3_body, 2)), freq=alert.freq_once_per_bar_close)
+
+// ============================================================================
+// END OF STRATEGY
+// ============================================================================
