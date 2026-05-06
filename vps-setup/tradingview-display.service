@@ -1,0 +1,13 @@
+[Unit]
+Description=TradingView headless display (Xvfb + Chromium)
+After=network.target
+
+[Service]
+User=tvserver
+ExecStart=/home/tvserver/start-display.sh
+Restart=on-failure
+RestartSec=10
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target
